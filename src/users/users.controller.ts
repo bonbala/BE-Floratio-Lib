@@ -18,7 +18,7 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Post()
-  createuser(@Body() createUserDto: createUserDto) {
+  createUser(@Body() createUserDto: createUserDto) {
     return this.usersService.createUser(createUserDto);
   }
 
@@ -37,7 +37,10 @@ export class UsersController {
   }
 
   @Patch(':id')
-  async updateUser(@Param('id') id: string, @Body() updapteUserDto: UpdateUserDto) {
+  async updateUser(
+    @Param('id') id: string,
+    @Body() updapteUserDto: UpdateUserDto,
+  ) {
     const isValid = mongoose.Types.ObjectId.isValid(id);
     if (!isValid) throw new HttpException('Invalid Id', 400);
     const updatedUser = this.usersService.updateUser(id, updapteUserDto);
