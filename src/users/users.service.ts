@@ -1,29 +1,19 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import { User } from 'src/schemas/User.schema';
 import { createUserDto } from './dto/CreateUser.dto';
 import { UpdateUserDto } from './dto/UpdateUser.dto';
-import { UserSettings } from 'src/schemas/UserSettings.schema';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectModel(User.name) private userModel: Model<User>,
-    @InjectModel(UserSettings.name)
-    private userSettinsgModel: Model<UserSettings>,
-  ) {}
+  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
-  async createUser({ settings, ...createUserDto }: createUserDto) {
-    if (settings) {
-      const newSettings = new this.userSettinsgModel(settings);
-      const savedNewSettings = await newSettings.save();
-      const newUser = new this.userModel({
-        ...createUserDto,
-        settings: savedNewSettings._id,
-      });
-      return newUser.save();
-    }
+  async findByUsername(username: string) {
+    return this.userModel.findOne({ username }).populate('role');
+  }
+
+  async createUser(createUserDto: createUserDto) {
     const newUser = new this.userModel(createUserDto);
     return newUser.save();
   }
@@ -36,8 +26,8 @@ export class UsersService {
     return this.userModel.findById(id).populate('settings');
   }
 
-  updateUser(id: string, updapteUserDto: UpdateUserDto) {
-    return this.userModel.findByIdAndUpdate(id, updapteUserDto, { new: true });
+  updateUser(id: string, updateUserDto: UpdateUserDto) {
+    return this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true });
   }
 
   async deleteUser(id: string) {
@@ -47,12 +37,6 @@ export class UsersService {
       throw new Error('User not found');
     }
 
-    // Nếu user có settings thì xóa luôn
-    if (user.settings) {
-      await this.userSettinsgModel.findByIdAndDelete(user.settings);
-    }
-
-    // Xóa user
     return this.userModel.findByIdAndDelete(id);
   }
 }

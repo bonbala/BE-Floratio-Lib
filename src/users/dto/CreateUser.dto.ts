@@ -1,25 +1,6 @@
-import { Type } from 'class-transformer';
-import {
-  IsBoolean,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from 'class-validator';
-
-export class createUserSettings {
-  @IsOptional()
-  @IsBoolean()
-  recriveNotifications?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  recriveSMS?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  recrive?: boolean;
-}
+import { Type } from '@nestjs/common';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Types } from 'mongoose';
 
 export class createUserDto {
   @IsNotEmpty()
@@ -30,8 +11,10 @@ export class createUserDto {
   @IsOptional()
   displayName?: string;
 
-  @IsOptional()
-  @ValidateNested() // Cái này validate đóng tổ của UserSetting trên
-  @Type(() => createUserSettings)
-  settings?: createUserSettings;
+  @IsNotEmpty()
+  @IsString()
+  readonly password: string;
+
+  @IsNotEmpty()
+  role: Types.ObjectId;
 }
