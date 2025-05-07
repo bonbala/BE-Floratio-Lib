@@ -1,11 +1,14 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { UserSettings } from './UserSettings.schema';
+import { Role } from './Roles.Schema';
 
 @Schema()
 export class User {
   @Prop({ unique: true, required: true })
   username: string;
+
+  @Prop({ required: true })
+  password: string;
 
   @Prop({ required: false })
   displayName?: string;
@@ -13,8 +16,8 @@ export class User {
   @Prop({ required: false })
   avatarUrl?: string;
 
-  @Prop({ type: mongoose.Schema.ObjectId, ref: 'UserSettings' })
-  settings?: UserSettings;
+  @Prop({ type: mongoose.Schema.ObjectId, ref: 'Role' })
+  role?: Role;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
