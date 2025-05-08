@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { RolesModule } from './roles/roles.module';
+import { PlantsModule } from './plants/plants.module';
 
 @Module({
   imports: [
@@ -11,7 +12,8 @@ import { RolesModule } from './roles/roles.module';
     ),
     UsersModule,
     AuthModule,
-    RolesModule, // Kết nối tới link mongodb
+    RolesModule,
+    PlantsModule, // Kết nối tới link mongodb
   ],
   controllers: [],
   providers: [],
