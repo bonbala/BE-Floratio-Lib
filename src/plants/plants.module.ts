@@ -7,6 +7,8 @@ import { Section, SectionSchema } from 'src/schemas/InfoDetails.schema';
 import { Detail, DetailSchema } from 'src/schemas/Details.schema';
 import { Phylum, PhylumSchema } from 'src/schemas/Phylum.schema';
 import { Family, FamilySchema } from 'src/schemas/Family.schema';
+import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
+import { Attribute, AttributeSchema } from 'src/schemas/Attribute.schema';
 
 @Module({
   imports: [
@@ -16,7 +18,9 @@ import { Family, FamilySchema } from 'src/schemas/Family.schema';
       { name: Detail.name, schema: DetailSchema },
       { name: Phylum.name, schema: PhylumSchema },
       { name: Family.name, schema: FamilySchema },
+      { name: Attribute.name, schema: AttributeSchema },
     ]),
+    CloudinaryModule,
   ],
   controllers: [PlantsController],
   providers: [PlantsService],
