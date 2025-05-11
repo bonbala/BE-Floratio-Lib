@@ -20,5 +20,4 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       permissions: payload.permissions, // <-- thêm permissions nếu có
     };
   }
-  
 }

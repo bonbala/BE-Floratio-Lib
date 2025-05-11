@@ -4,18 +4,25 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { RolesModule } from './roles/roles.module';
 import { PlantsModule } from './plants/plants.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { CloudinaryService } from './cloudinary/clodinary.service';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(
-      'mongodb+srv://nhathieu1805:9PvVUob8KSOT1mBP@cluster0.jtqgese.mongodb.net/',
-    ),
+    ConfigModule.forRoot({
+      envFilePath: '.env',
+      isGlobal: true,
+    }),
+
+    MongooseModule.forRoot(process.env.MONGO_URI!),
     UsersModule,
     AuthModule,
     RolesModule,
-    PlantsModule, // Kết nối tới link mongodb
+    PlantsModule,
+    CloudinaryModule, // Kết nối tới link mongodb
   ],
   controllers: [],
-  providers: [],
+  providers: [CloudinaryService],
 })
 export class AppModule {}
