@@ -5,98 +5,154 @@ import {
   Post,
   Body,
   Param,
-  Delete,
   Patch,
+  Delete,
   UploadedFiles,
   UseInterceptors,
+  UseGuards,
+  HttpException,
 } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiParam,
-  ApiConsumes,
-  ApiBody,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { PlantsService } from './plants.service';
 import { CreatePlantDto } from './dto/create-plant.dto';
 import { UpdatePlantDto } from './dto/update-plant.dto';
+import { PlantResponseDto } from './dto/plant-response.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from 'src/common/guards/permissions.guard';
+import { Permissions } from 'src/common/decoraters/permissions.decorator';
 
 @ApiTags('plants')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('plants')
 export class PlantsController {
   constructor(private readonly plantsService: PlantsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Tạo mới một cây' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        scientific_name: { type: 'string', example: 'Ficus lyrata' },
-        common_name: { type: 'string', example: 'Fiddle Leaf Fig' },
-        phylum: { type: 'string', example: 'Magnoliophyta' },
-        family: { type: 'string', example: 'Moraceae' },
-        info_sections: {
-          type: 'array',
-          items: { $ref: '#/components/schemas/CreateSectionDto' },
-        },
-        images: {
-          type: 'array',
-          items: { type: 'string', format: 'binary' },
-        },
-      },
-    },
+  @Permissions('create:plant')
+  @ApiOperation({ summary: 'Tạo mới cây' })
+  @ApiResponse({
+    status: 201,
+    description: 'Tạo cây thành công.',
+    type: PlantResponseDto,
   })
-  @ApiResponse({ status: 201, description: 'Cây được tạo thành công.' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
   @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 5 }]))
-  create(
+  async create(
     @Body() createPlantDto: CreatePlantDto,
     @UploadedFiles() files: { images?: Express.Multer.File[] },
-  ) {
-    return this.plantsService.create(createPlantDto, files.images || []);
-  } // :contentReference[oaicite:8]{index=8}:contentReference[oaicite:9]{index=9}
+  ): Promise<PlantResponseDto> {
+    const plant = await this.plantsService.create(
+      createPlantDto,
+      files.images || [],
+    );
+    return this.toResponse(plant);
+  }
 
   @Get()
+  @Permissions('read:plant')
   @ApiOperation({ summary: 'Lấy danh sách tất cả cây' })
-  @ApiResponse({ status: 200, description: 'Trả về mảng cây.' })
-  findAll() {
-    return this.plantsService.findAll();
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về mảng cây.',
+    type: [PlantResponseDto],
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  async findAll(): Promise<PlantResponseDto[]> {
+    const plants = await this.plantsService.findAll();
+    return plants.map((p) => this.toResponse(p));
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Lấy thông tin một cây theo ID' })
+  @Permissions('read:plant')
+  @ApiOperation({ summary: 'Lấy thông tin cây theo ID' })
   @ApiParam({ name: 'id', description: 'ObjectId của cây' })
-  @ApiResponse({ status: 200, description: 'Trả về chi tiết cây.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về thông tin cây.',
+    type: PlantResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy cây.' })
-  findOne(@Param('id') id: string) {
-    return this.plantsService.findOne(id);
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  async findOne(@Param('id') id: string): Promise<PlantResponseDto> {
+    try {
+      const plant = await this.plantsService.findOne(id);
+      return this.toResponse(plant);
+    } catch (err) {
+      throw new HttpException(`Plant #${id} không tồn tại`, 404);
+    }
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Cập nhật một cây theo ID' })
+  @Permissions('update:plant')
+  @ApiOperation({ summary: 'Cập nhật thông tin cây' })
   @ApiParam({ name: 'id', description: 'ObjectId của cây' })
-  @ApiResponse({ status: 200, description: 'Cập nhật thành công.' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Cập nhật thành công.',
+    type: PlantResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid ID.' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy cây.' })
-  update(@Param('id') id: string, @Body() updatePlantDto: UpdatePlantDto) {
-    return this.plantsService.update(id, updatePlantDto);
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  async update(
+    @Param('id') id: string,
+    @Body() updatePlantDto: UpdatePlantDto,
+  ): Promise<PlantResponseDto> {
+    try {
+      const plant = await this.plantsService.update(id, updatePlantDto);
+      return this.toResponse(plant);
+    } catch (err) {
+      throw new HttpException(`Plant #${id} không tồn tại`, 404);
+    }
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Xóa một cây theo ID' })
+  @Permissions('delete:plant')
+  @ApiOperation({ summary: 'Xóa cây theo ID' })
   @ApiParam({ name: 'id', description: 'ObjectId của cây' })
   @ApiResponse({
     status: 204,
     description: 'Xóa thành công. Không trả về nội dung.',
   })
+  @ApiResponse({ status: 400, description: 'Invalid ID.' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy cây.' })
-  remove(@Param('id') id: string) {
-    return this.plantsService.remove(id);
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  async remove(@Param('id') id: string): Promise<void> {
+    try {
+      await this.plantsService.remove(id);
+    } catch (err) {
+      throw new HttpException(`Plant #${id} không tồn tại`, 404);
+    }
+  }
+
+  private toResponse(plant: any): PlantResponseDto {
+    return {
+      scientific_name: plant.scientific_name,
+      common_name: plant.common_name,
+      image_url: plant.image_url,
+      info_sections: plant.info_sections.map((sec) => ({
+        section_name: sec.section_name,
+        details: sec.details.map((d) => ({
+          category: d.category,
+          content: d.content,
+        })),
+      })),
+      phylum: plant.phylum.name,
+      family: plant.family.name,
+      attributes: plant.attributes.map((attr) => attr.name),
+    };
   }
 }
