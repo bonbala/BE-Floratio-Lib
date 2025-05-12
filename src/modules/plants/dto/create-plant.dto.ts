@@ -53,7 +53,7 @@ export class CreatePlantDto {
   })
   @IsString()
   @IsNotEmpty()
-  scientific_name: string; // :contentReference[oaicite:4]{index=4}:contentReference[oaicite:5]{index=5}
+  scientific_name: string;
 
   @ApiPropertyOptional({
     description: 'Tên thông dụng (không bắt buộc)',

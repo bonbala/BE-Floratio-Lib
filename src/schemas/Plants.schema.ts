@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { Attribute } from './Attribute.schema';
 
 export type PlantDocument = Plant & Document;
 
@@ -23,7 +24,10 @@ export class Plant {
   @Prop({ type: Types.ObjectId, ref: 'Family' })
   family: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Attribute', default: [] })
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: Attribute.name }],
+    default: [],
+  })
   attributes: Types.ObjectId[];
 }
 
