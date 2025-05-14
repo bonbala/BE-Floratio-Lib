@@ -1,33 +1,27 @@
-// auth/guards/permissions.guard.ts
-import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
+// src/common/guards/permissions.guard.ts
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PERMISSIONS_KEY } from 'src/common/decoraters/permissions.decorator';
+import { PERMS_KEY } from '../decorators/permissions.decorator';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
-  canActivate(context: ExecutionContext): boolean {
-    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
-      PERMISSIONS_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+  canActivate(ctx: ExecutionContext): boolean {
+    const required = this.reflector.getAllAndOverride<string[]>(PERMS_KEY, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
+    if (!required) return true;
 
-    if (!requiredPermissions || requiredPermissions.length === 0) return true;
+    const { user } = ctx.switchToHttp().getRequest();
 
-    const { user } = context.switchToHttp().getRequest();
-    const userPermissions = user?.permissions || [];
+    // nếu đã có mảng permissions string, dùng luôn
+    const userPerms: string[] = Array.isArray(user.permissions)
+      ? user.permissions
+      : // fallback: nếu permissions nằm trong role object
+        ((user.role as any).permissions as any[]).map((p) => p.name);
 
-    const hasPermission = requiredPermissions.every((permission) =>
-      userPermissions.includes(permission),
-    );
-
-    if (!hasPermission) throw new ForbiddenException('Permission denied');
-    return true;
+    return required.every((p) => userPerms.includes(p));
   }
 }

@@ -1,42 +1,45 @@
-import { User } from 'src/schemas/User.schema';
-import { createUserDto } from './dto/CreateUser.dto';
-import { UpdateUserDto } from './dto/UpdateUser.dto';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
+import * as bcrypt from 'bcrypt';
+import { User } from './schemas/user.schema';
 
 @Injectable()
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
   async findByUsername(username: string) {
-    return this.userModel.findOne({ username }).populate('role');
+    return this.userModel.findOne({ username }).exec();
   }
 
-  async createUser(createUserDto: createUserDto) {
-    const newUser = new this.userModel(createUserDto);
-    return newUser.save();
+  async findById(id: string) {
+    const user = await this.userModel.findById(id).exec();
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
-  getUsers() {
-    return this.userModel.find();
+  async create(
+    username: string,
+    email: string,
+    password: string,
+    roleId: Types.ObjectId,
+  ) {
+    const hash = await bcrypt.hash(password, 10);
+    const created = new this.userModel({
+      username,
+      email,
+      password: hash,
+      role: roleId,
+    });
+    return created.save();
   }
 
-  getUserById(id: string) {
-    return this.userModel.findById(id);
+  async changePassword(userId: string, newPassword: string) {
+    const hash = await bcrypt.hash(newPassword, 10);
+    return this.userModel.findByIdAndUpdate(userId, { password: hash }).exec();
   }
 
-  updateUser(id: string, updateUserDto: UpdateUserDto) {
-    return this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true });
-  }
-
-  async deleteUser(id: string) {
-    const user = await this.userModel.findById(id);
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    return this.userModel.findByIdAndDelete(id);
+  async validatePassword(password: string, hash: string) {
+    return bcrypt.compare(password, hash);
   }
 }

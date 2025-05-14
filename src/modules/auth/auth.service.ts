@@ -1,76 +1,95 @@
+import { Types } from 'mongoose';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from 'src/modules/users/users.service';
-import * as bcrypt from 'bcryptjs';
-import { RolesService } from 'src/modules/roles/roles.service';
-import { RegisterDto } from './dto/register.dto';
+import { UsersService } from '../users/users.service';
+import { RolesService } from '../roles/roles.service';
 import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
-    private jwtService: JwtService,
     private rolesService: RolesService,
+    private jwtService: JwtService,
   ) {}
 
-  async validateUser(username: string, password: string): Promise<any> {
+  async signup(
+    username: string,
+    email: string,
+    password: string,
+    roleName: string,
+  ) {
+    const role = await this.rolesService.findByName(roleName);
+    // Tạo user mới
+    const user = await this.usersService.create(
+      username,
+      email,
+      password,
+      role._id as Types.ObjectId,
+    );
+
+    return {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      role: role.name,
+    };
+  }
+
+  async validateUser(username: string, password: string) {
     const user = await this.usersService.findByUsername(username);
-    if (!user) throw new UnauthorizedException('Invalid credentials');
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new UnauthorizedException('Invalid credentials');
-
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    const valid = await this.usersService.validatePassword(
+      password,
+      user.password,
+    );
+    if (!valid) {
+      throw new UnauthorizedException('Wrong Password');
+    }
     return user;
   }
 
-  async register(registerDto: RegisterDto) {
-    const existingUser = await this.usersService.findByUsername(
-      registerDto.username,
-    );
-    if (existingUser) {
-      throw new Error('User already exists');
-    }
+  async login(dto: LoginDto) {
+    // 1. Validate user
+    const user = await this.validateUser(dto.username, dto.password);
 
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    // 2. Load role & permissions (names only)
+    const role = await this.rolesService.findById(user.role.toString());
+    await role.populate('permissions');
 
-    // Gán role mặc định nếu không truyền
-    const roleName = registerDto.role || 'normal user';
-    const role = await this.rolesService.getRoleByName(roleName);
-    if (!role) throw new Error('Role not found');
+    const permissionNames = role.permissions.map((p: any) => p.name);
 
-    const newUser = await this.usersService.createUser({
-      ...registerDto,
-      password: hashedPassword,
-      role: role._id,
-    });
-
-    return { message: 'User registered successfully', userId: newUser._id };
-  }
-
-  async login(userInput: LoginDto): Promise<{ access_token: string }> {
-    const user = await this.usersService.findByUsername(userInput.username);
-    if (!user) {
-      throw new UnauthorizedException('User role not found');
-    }
-    const roleName =
-      typeof user.role === 'string' ? user.role : user.role?.name;
-    if (!roleName) {
-      throw new UnauthorizedException('User role not found');
-    }
-    const role = await this.rolesService.getRoleByName(roleName);
-
-    if (user?.password !== userInput.password) {
-      throw new UnauthorizedException();
-    }
+    // 3. Build clean payload
+    const userId = (user._id as Types.ObjectId).toString();
     const payload = {
-      Id: user._id,
+      sub: userId,
       username: user.username,
       role: role.name,
-      permissions: role.permissions,
+      permissions: permissionNames,
     };
+
+    // 4. Sign token
     return {
-      access_token: await this.jwtService.signAsync(payload),
+      access_token: this.jwtService.sign(payload),
+      expires_in: process.env.JWT_EXPIRES_IN,
     };
+  }
+
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ) {
+    const user = await this.usersService.findById(userId);
+    // Xác thực mật khẩu cũ
+    const valid = await this.usersService.validatePassword(
+      oldPassword,
+      user.password,
+    );
+    if (!valid) throw new Error('Old password incorrect');
+    await this.usersService.changePassword(userId, newPassword);
+    return { success: true };
   }
 }

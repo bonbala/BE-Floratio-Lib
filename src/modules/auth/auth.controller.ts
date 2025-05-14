@@ -1,32 +1,66 @@
-// src/auth/auth.controller.ts
-import { Controller, Post, Request, UseGuards, Body } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  Patch,
+  Get,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { LocalAuthGuard } from '../../common/guards/local-auth.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Post('register')
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  @Post('signup')
+  async signup(@Body() dto: SignupDto) {
+    return this.authService.signup(
+      dto.username,
+      dto.email,
+      dto.password,
+      dto.roleName,
+    );
   }
 
+  @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    const user = await this.authService.validateUser(
-      loginDto.username,
-      loginDto.password,
-    );
-    if (!user) throw new Error('Invalid credentials');
-    return this.authService.login(user);
+  async login(@Request() req, @Body() dto: LoginDto) {
+    return this.authService.login(dto);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('profile')
-  getProfile(@Request() req) {
-    return req.user;
+  @Patch('change-password')
+  async changePassword(@Request() req, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(
+      req.user._id,
+      dto.oldPassword,
+      dto.newPassword,
+    );
+  }
+
+  // Ví dụ endpoint chỉ cho role 'admin' truy cập
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Get('admin-only')
+  adminRoute() {
+    return { msg: 'Chỉ admin mới xem được' };
+  }
+
+  // Ví dụ endpoint yêu cầu permission 'create:user'
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('create:user')
+  @Post('create-user')
+  createUser(@Body() dto: SignupDto) {
+    // ...
   }
 }
