@@ -8,14 +8,19 @@ import {
   Body,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { ContributeService } from './contribute.service';
+
 import { CreateContributeDto } from './dto/create-contribute.dto';
 import { UpdateContributeDto } from './dto/update-contribute.dto';
+import { ContributeService } from './contribute.service';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 
 @Controller('contributes')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -39,8 +44,15 @@ export class ContributeController {
     },
   })
   @ApiResponse({ status: 201, description: 'Contribution created' })
-  create(@Request() req: any, @Body() dto: CreateContributeDto) {
-    return this.service.create(req.user.userId, dto);
+  @UseInterceptors(FilesInterceptor('images', 5,{
+      storage: memoryStorage(),    // bắt buộc để có file.buffer
+    }))   // max 5 files
+  async create(
+    @Request() req: any,
+    @Body() dto: CreateContributeDto,
+     @UploadedFiles() files: any[], 
+  ) {
+    return this.service.create(req.user.userId, dto, files);
   }
 
   @Get('list')

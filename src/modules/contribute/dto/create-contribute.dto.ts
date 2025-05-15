@@ -13,7 +13,7 @@ class TableItemDto {
   @IsString() content: string;
 }
 
-class SpeciesDescriptionDto {
+export class SpeciesDescriptionDto {
   @IsString() title: string;
 
   @IsArray()

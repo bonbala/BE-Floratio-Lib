@@ -14,7 +14,7 @@ export class UsersService {
     const users = await this.userModel.find().populate('role', 'name').exec();
 
     // Chuyển mỗi document thành object thuần và thay role thành role.name
-    return users.map(user => {
+    return users.map((user) => {
       const obj = user.toObject();
       return {
         ...obj,

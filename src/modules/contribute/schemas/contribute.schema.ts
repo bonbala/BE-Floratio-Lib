@@ -54,3 +54,9 @@ export class Contribute extends Document {
   review_message: string;
 }
 export const ContributeSchema = SchemaFactory.createForClass(Contribute);
+
+export type ContributeDocument = Contribute &
+  Document & {
+    createdAt: Date;
+    updatedAt: Date;
+  };
