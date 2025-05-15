@@ -21,7 +21,7 @@ import { File } from 'multer';
 export class PlantsController {
   constructor(private readonly plantsService: PlantsService) {}
 
-  @Post()
+  @Post('create')
   @ApiOperation({ summary: 'Create a new plant entry' })
   @ApiBody({
     description: 'Data needed to create a plant',
@@ -52,7 +52,7 @@ export class PlantsController {
     return this.plantsService.create(dto, files);
   }
 
-  @Get()
+  @Get('list')
   @ApiOperation({ summary: 'Retrieve all plants' })
   @ApiResponse({
     status: 200,
@@ -60,15 +60,10 @@ export class PlantsController {
     type: [PlantResponseDto],
   })
   findAll() {
-    return this.plantsService.findAll();
-  }
-
-  @Get('compact')
-  getCompact() {
     return this.plantsService.findCompact();
   }
 
-  @Get(':id')
+  @Get('detail/:id')
   @ApiOperation({ summary: 'Retrieve a single plant by ID' })
   @ApiParam({ name: 'id', description: 'Unique identifier of the plant' })
   @ApiResponse({
@@ -81,7 +76,7 @@ export class PlantsController {
     return this.plantsService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch('update/:id')
   @ApiOperation({ summary: 'Update an existing plant' })
   @ApiParam({ name: 'id', description: 'Unique identifier of the plant' })
   @ApiBody({
@@ -110,7 +105,7 @@ export class PlantsController {
     return this.plantsService.update(id, dto);
   }
 
-  @Delete(':id')
+  @Delete('delete/:id')
   @ApiOperation({ summary: 'Remove a plant by ID' })
   @ApiParam({ name: 'id', description: 'Unique identifier of the plant' })
   @ApiResponse({ status: 204, description: 'Plant removed successfully' })
