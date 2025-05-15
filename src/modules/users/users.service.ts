@@ -9,8 +9,18 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
-  async findAll(): Promise<User[]> {
-    return this.userModel.find().exec();
+  async findAll(): Promise<any[]> {
+    // Populate field 'role', chỉ lấy 'name'
+    const users = await this.userModel.find().populate('role', 'name').exec();
+
+    // Chuyển mỗi document thành object thuần và thay role thành role.name
+    return users.map(user => {
+      const obj = user.toObject();
+      return {
+        ...obj,
+        role: (obj.role as any)?.name ?? null,
+      };
+    });
   }
 
   async findByUsername(username: string) {

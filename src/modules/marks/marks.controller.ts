@@ -11,8 +11,6 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
 import { MarksService } from './marks.service';
 import { CreateMarkDto } from './dto/create-mark.dto';
 import { UpdateMarkDto } from './dto/update-mark.dto';
@@ -91,8 +89,7 @@ export class MarksController {
   }
 
   @Delete('delete/:id')
-  @UseGuards(RolesGuard)
-  @Roles('admin')
+  @ApiOperation({ summary: 'Delete an existing mark' })
   remove(@Param('id') id: string) {
     return this.marksService.remove(id);
   }

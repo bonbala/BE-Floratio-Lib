@@ -136,4 +136,15 @@ export class PlantsService {
     const res = await this.plantModel.findByIdAndDelete(id);
     if (!res) throw new NotFoundException('Plant not found');
   }
+
+  
+  /** Lấy danh sách tất cả attributes */
+  async findAllAttributes(): Promise<Attribute[]> {
+    return this.attrModel.find().exec();
+  }
+
+  /** Lấy danh sách tất cả families */
+  async findAllFamilies(): Promise<Family[]> {
+    return this.famModel.find().exec();
+  }
 }
