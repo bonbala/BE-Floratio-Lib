@@ -1,7 +1,8 @@
+// src/schemas/plant.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { Attribute } from './attribute.schema';
 import { Family } from './family.schema';
+import { Attribute } from './attribute.schema';
 import {
   SpeciesDescription,
   SpeciesDescriptionSchema,
@@ -9,20 +10,17 @@ import {
 
 @Schema({ timestamps: true })
 export class Plant extends Document {
+  @Prop({ required: true })
+  scientific_name: string;
+
   @Prop({ type: [String], default: [] })
   common_name: string[];
 
-  @Prop({ required: true, unique: true })
-  scientific_name: string;
-
-  @Prop()
-  description: string;
-
-  @Prop({ type: [Types.ObjectId], ref: Attribute.name, default: [] })
-  attributes: Types.ObjectId[];
-
   @Prop({ type: Types.ObjectId, ref: Family.name, required: true })
-  family: Types.ObjectId;
+  family_name: Types.ObjectId;
+
+  @Prop({ type: [Types.ObjectId], ref: Attribute.name })
+  attributes: Types.ObjectId[];
 
   @Prop({ type: [String], default: [] })
   images: string[];
@@ -30,4 +28,5 @@ export class Plant extends Document {
   @Prop({ type: [SpeciesDescriptionSchema], default: [] })
   species_description: SpeciesDescription[];
 }
+
 export const PlantSchema = SchemaFactory.createForClass(Plant);

@@ -1,119 +1,133 @@
+// src/plants/plants.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { File } from 'multer';
 import { Plant } from './schemas/plant.schema';
-import { Attribute } from './schemas/attribute.schema';
 import { Family } from './schemas/family.schema';
+import { Attribute } from './schemas/attribute.schema';
 import { CreatePlantDto } from './dto/create-plant.dto';
 import { UpdatePlantDto } from './dto/update-plant.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { File } from 'multer';
 
 @Injectable()
 export class PlantsService {
   constructor(
     @InjectModel(Plant.name) private plantModel: Model<Plant>,
-    @InjectModel(Attribute.name) private attrModel: Model<Attribute>,
     @InjectModel(Family.name) private famModel: Model<Family>,
+    @InjectModel(Attribute.name) private attrModel: Model<Attribute>,
     private readonly cloudinary: CloudinaryService,
   ) {}
 
   async create(dto: CreatePlantDto, files?: File[]): Promise<Plant> {
-    const attributeIds: Types.ObjectId[] = await Promise.all(
-      dto.attributes.map(async (name) => {
-        let attr = await this.attrModel.findOne({ name }).exec();
-        if (!attr) attr = await this.attrModel.create({ name });
-        return attr._id as Types.ObjectId;
+    let familyDoc = await this.famModel.findOne({ name: dto.family });
+    if (!familyDoc) familyDoc = await this.famModel.create({ name: dto.family });
+
+    const attrDocs = await Promise.all(
+      dto.attributes.map(async name => {
+        let doc = await this.attrModel.findOne({ name });
+        if (!doc) doc = await this.attrModel.create({ name });
+        return doc;
       }),
     );
 
-    let family = await this.famModel.findOne({ name: dto.family }).exec();
-    if (!family) family = await this.famModel.create({ name: dto.family });
-
-    let urls: string[] = [];
-    if (files?.length) {
-      urls = await Promise.all(
-        files.map((f) => this.cloudinary.uploadImage(f.buffer, 'plants')),
-      );
+    const imageUrls: string[] = [];
+    if (files && files.length) {
+      for (const file of files) {
+        const url: string = await this.cloudinary.uploadImage(file);
+        imageUrls.push(url);
+      }
     }
 
-    const created = new this.plantModel({
-      common_name: dto.common_name,
+    const plant = new this.plantModel({
       scientific_name: dto.scientific_name,
-      description: dto.description,
-      attributes: attributeIds,
-      family: family._id as Types.ObjectId,
-      images: urls,
+      common_name: dto.common_name || [],
+      family: familyDoc._id as Types.ObjectId,
+      attributes: attrDocs.map(a => a._id as Types.ObjectId),
+      images: imageUrls,
       species_description: dto.species_description || [],
     });
-    return created.save();
-  }
-
-  async findAll(): Promise<Plant[]> {
-    return this.plantModel
-      .find()
-      .populate('attributes')
-      .populate('family')
-      .exec();
-  }
-
-  async findOne(id: string): Promise<Plant> {
-    const plant = await this.plantModel
-      .findById(id)
-      .populate('attributes')
-      .populate('family')
-      .exec();
-    if (!plant) throw new NotFoundException('Plant not found');
-    return plant;
-  }
-
-  async update(
-    id: string,
-    dto: UpdatePlantDto,
-    files?: File[],
-  ): Promise<Plant> {
-    const plant = await this.plantModel.findById(id).exec();
-    if (!plant) throw new NotFoundException('Plant not found');
-
-    if (dto.attributes) {
-      const attrIds: Types.ObjectId[] = await Promise.all(
-        dto.attributes.map(async (name) => {
-          let attr = await this.attrModel.findOne({ name }).exec();
-          if (!attr) attr = await this.attrModel.create({ name });
-          return attr._id as Types.ObjectId;
-        }),
-      );
-      plant.attributes = attrIds;
-    }
-
-    if (dto.family) {
-      let fam = await this.famModel.findOne({ name: dto.family }).exec();
-      if (!fam) fam = await this.famModel.create({ name: dto.family });
-      plant.family = fam._id as Types.ObjectId;
-    }
-
-    let urls = plant.images || [];
-    if (files?.length) {
-      const newUrls = await Promise.all(
-        files.map((f) => this.cloudinary.uploadImage(f.buffer, 'plants')),
-      );
-      urls = urls.concat(newUrls);
-    }
-    plant.images = urls;
-
-    Object.assign(plant, {
-      common_name: dto.common_name,
-      scientific_name: dto.scientific_name,
-      description: dto.description,
-      species_description: dto.species_description,
-    });
-
     return plant.save();
   }
 
-  async remove(id: string) {
-    const res = await this.plantModel.findByIdAndDelete(id).exec();
+  async findAll(): Promise<any[]> {
+    const plants = await this.plantModel
+      .find()
+      .populate('family_name', 'name')
+      .populate('attributes', 'name')
+      .lean();
+
+    return plants.map(p => ({
+      scientific_name: p.scientific_name,
+      common_name: p.common_name,
+      family_name: (p.family_name as any)?.name,
+      attributes: (p.attributes as any[]).map(a => a.name),
+      images: p.images,
+      species_description: p.species_description,
+    }));
+  }
+
+  async findCompact(): Promise<Array<{
+    scientific_name: string;
+    family_name: string;
+    image: string | null;         // chỉ image đầu tiên
+    common_name: string[];
+  }>> {
+    const plants = await this.plantModel
+      .find()
+      .populate('family_name', 'name')
+      .lean();
+
+    return plants.map(p => ({
+      scientific_name: p.scientific_name,
+      family_name: (p.family_name as any)?.name,
+      image: Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null,
+      common_name: p.common_name,
+    }));
+  }
+
+  async findOne(id: string): Promise<any> {
+    const p = await this.plantModel
+      .findById(id)
+      .populate('family_name', 'name')
+      .populate('attributes', 'name')
+      .lean();
+    if (!p) throw new NotFoundException('Plant not found');
+
+    return {
+      scientific_name: p.scientific_name,
+      common_name: p.common_name,
+      family_name: (p.family_name as any)?.name,
+      attributes: (p.attributes as any[]).map(a => a.name),
+      images: p.images,
+      species_description: p.species_description,
+    };
+  }
+
+  async update(id: string, dto: UpdatePlantDto): Promise<Plant> {
+    const plant = await this.plantModel.findById(id);
+    if (!plant) throw new NotFoundException('Plant not found');
+    if (dto.family) {
+      let fam = await this.famModel.findOne({ name: dto.family });
+      if (!fam) fam = await this.famModel.create({ name: dto.family });
+      plant.family_name = fam._id as Types.ObjectId;
+    }
+    if (dto.attributes) {
+      const docs = await Promise.all(
+        dto.attributes.map(async name => {
+          let doc = await this.attrModel.findOne({ name });
+          if (!doc) doc = await this.attrModel.create({ name });
+          return doc as any;
+        }),
+      );
+      plant.attributes = docs.map(d => d._id as Types.ObjectId);
+    }
+    Object.assign(plant, dto);
+    return plant.save();
+  }
+
+  async remove(id: string): Promise<void> {
+    const res = await this.plantModel.findByIdAndDelete(id);
     if (!res) throw new NotFoundException('Plant not found');
-    return { deleted: true };
   }
 }
