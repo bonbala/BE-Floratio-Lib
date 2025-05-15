@@ -7,6 +7,7 @@ import { Contribute, ContributeSchema } from './schemas/contribute.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { Attribute, AttributeSchema } from '../plants/schemas/attribute.schema';
 import { Family, FamilySchema } from '../plants/schemas/family.schema';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { Family, FamilySchema } from '../plants/schemas/family.schema';
       { name: Attribute.name, schema: AttributeSchema },
       { name: Family.name, schema: FamilySchema },
     ]),
+    CloudinaryModule,
   ],
   controllers: [ContributeController],
   providers: [ContributeService],

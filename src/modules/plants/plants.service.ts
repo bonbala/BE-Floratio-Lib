@@ -75,11 +75,13 @@ export class PlantsService {
       family_name: string;
       image: string | null; // chỉ image đầu tiên
       common_name: string[];
+      attributes: string[];
     }>
   > {
     const plants = await this.plantModel
       .find()
       .populate('family_name', 'name')
+      .populate('attributes', 'name')
       .lean();
 
     return plants.map((p) => ({
@@ -89,6 +91,9 @@ export class PlantsService {
       image:
         Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null,
       common_name: p.common_name,
+      attributes: Array.isArray((p as any).attributes)
+        ? (p as any).attributes.map((a: any) => a.name)
+        : [],
     }));
   }
 
@@ -137,7 +142,6 @@ export class PlantsService {
     if (!res) throw new NotFoundException('Plant not found');
   }
 
-  
   /** Lấy danh sách tất cả attributes */
   async findAllAttributes(): Promise<Attribute[]> {
     return this.attrModel.find().exec();
