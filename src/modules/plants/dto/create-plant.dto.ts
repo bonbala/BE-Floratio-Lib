@@ -1,59 +1,50 @@
+// src/dto/create-plant.dto.ts
 import {
   IsString,
-  IsOptional,
+  IsNotEmpty,
   IsArray,
-  //   ArrayUnique,
+  ArrayNotEmpty,
+  IsOptional,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class TableItemDto {
-  @IsString()
+  @IsString() @IsNotEmpty()
   title: string;
 
-  @IsString()
+  @IsString() @IsNotEmpty()
   content: string;
 }
 
 class SpeciesDescriptionDto {
-  @IsString()
+  @IsString() @IsNotEmpty()
   title: string;
 
-  @IsArray()
-  @ValidateNested({ each: true })
+  @IsArray() @ValidateNested({ each: true })
   @Type(() => TableItemDto)
   tables: TableItemDto[];
 }
 
 export class CreatePlantDto {
-  @IsOptional()
-  @IsArray()
-  //   @ArrayUnique()
+  @IsString() @IsNotEmpty()
+  scientific_name: string;
+
+  @IsArray() @IsOptional()
   @IsString({ each: true })
   common_name?: string[];
 
-  @IsString()
-  scientific_name: string;
+  @IsString() @IsNotEmpty()
+  family: string; // name
 
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsArray()
-  //   @ArrayUnique()
+  @IsArray() @ArrayNotEmpty()
   @IsString({ each: true })
-  attributes: string[];
-
-  @IsString()
-  family: string;
+  attributes: string[]; // names
 
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  images?: string[];
+  images?: any; // handled by Multer
 
-  @IsOptional()
-  @IsArray()
+  @IsArray() @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => SpeciesDescriptionDto)
   species_description?: SpeciesDescriptionDto[];
