@@ -38,10 +38,11 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
   // --------------------------
 
-  await app.listen(process.env.PORT ?? 8000);
-  console.log(` Server chạy tại http://localhost:${process.env.PORT ?? 8000}`);
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  await app.listen(port, '0.0.0.0');
+  console.log(` Server chạy tại http://localhost:${process.env.PORT ?? 3000}`);
   console.log(
-    ` Swagger UI: http://localhost:${process.env.PORT ?? 8000}/api/docs`,
+    ` Swagger UI: http://localhost:${process.env.PORT ?? 3000}/api/docs`,
   );
 }
 bootstrap();
