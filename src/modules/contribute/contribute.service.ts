@@ -14,7 +14,7 @@ import { CreateContributeDto } from './dto/create-contribute.dto';
 import { UpdateContributeDto } from './dto/update-contribute.dto';
 import { ContributeResponseDto } from './dto/contribute-response.dto';
 import { ContributeSummaryDto } from './dto/contribute-summary.dto';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';    // import thêm
+import { CloudinaryService } from '../cloudinary/cloudinary.service'; // import thêm
 import { Express } from 'express';
 @Injectable()
 export class ContributeService {
@@ -27,7 +27,7 @@ export class ContributeService {
   async create(
     userId: string,
     dto: CreateContributeDto,
-    files: any[] = [],    // nhận files từ controller
+    files: any[] = [], // nhận files từ controller
   ): Promise<ContributeResponseDto> {
     // 1. Upload tất cả file lên Cloudinary
     const imageUrls: string[] = [];
@@ -44,7 +44,7 @@ export class ContributeService {
       common_name: dto.common_name || [],
       description: dto.description,
       // DTO attributes gửi lên là array of attribute IDs
-      attributes: dto.attributes?.map(id => new Types.ObjectId(id)) || [],
+      attributes: dto.attributes?.map((id) => new Types.ObjectId(id)) || [],
       // images bây giờ là URL từ Cloudinary
       images: imageUrls,
       species_description: dto.species_description || [],
@@ -72,7 +72,7 @@ export class ContributeService {
       scientific_name: item.scientific_name,
       common_name: item.common_name,
       description: item.description,
-      attributes: (item.attributes as any[]).map(a => a.name),
+      attributes: (item.attributes as any[]).map((a) => a.name),
       images: item.images,
       species_description: item.species_description,
       suggested_family: item.suggested_family?.toString(),
