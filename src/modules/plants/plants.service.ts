@@ -21,10 +21,11 @@ export class PlantsService {
 
   async create(dto: CreatePlantDto, files?: File[]): Promise<Plant> {
     let familyDoc = await this.famModel.findOne({ name: dto.family });
-    if (!familyDoc) familyDoc = await this.famModel.create({ name: dto.family });
+    if (!familyDoc)
+      familyDoc = await this.famModel.create({ name: dto.family });
 
     const attrDocs = await Promise.all(
-      dto.attributes.map(async name => {
+      dto.attributes.map(async (name) => {
         let doc = await this.attrModel.findOne({ name });
         if (!doc) doc = await this.attrModel.create({ name });
         return doc;
@@ -43,7 +44,7 @@ export class PlantsService {
       scientific_name: dto.scientific_name,
       common_name: dto.common_name || [],
       family: familyDoc._id as Types.ObjectId,
-      attributes: attrDocs.map(a => a._id as Types.ObjectId),
+      attributes: attrDocs.map((a) => a._id as Types.ObjectId),
       images: imageUrls,
       species_description: dto.species_description || [],
     });
@@ -57,31 +58,34 @@ export class PlantsService {
       .populate('attributes', 'name')
       .lean();
 
-    return plants.map(p => ({
+    return plants.map((p) => ({
       scientific_name: p.scientific_name,
       common_name: p.common_name,
       family_name: (p.family_name as any)?.name,
-      attributes: (p.attributes as any[]).map(a => a.name),
+      attributes: (p.attributes as any[]).map((a) => a.name),
       images: p.images,
       species_description: p.species_description,
     }));
   }
 
-  async findCompact(): Promise<Array<{
-    scientific_name: string;
-    family_name: string;
-    image: string | null;         // chỉ image đầu tiên
-    common_name: string[];
-  }>> {
+  async findCompact(): Promise<
+    Array<{
+      scientific_name: string;
+      family_name: string;
+      image: string | null; // chỉ image đầu tiên
+      common_name: string[];
+    }>
+  > {
     const plants = await this.plantModel
       .find()
       .populate('family_name', 'name')
       .lean();
 
-    return plants.map(p => ({
+    return plants.map((p) => ({
       scientific_name: p.scientific_name,
       family_name: (p.family_name as any)?.name,
-      image: Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null,
+      image:
+        Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null,
       common_name: p.common_name,
     }));
   }
@@ -98,7 +102,7 @@ export class PlantsService {
       scientific_name: p.scientific_name,
       common_name: p.common_name,
       family_name: (p.family_name as any)?.name,
-      attributes: (p.attributes as any[]).map(a => a.name),
+      attributes: (p.attributes as any[]).map((a) => a.name),
       images: p.images,
       species_description: p.species_description,
     };
@@ -114,13 +118,13 @@ export class PlantsService {
     }
     if (dto.attributes) {
       const docs = await Promise.all(
-        dto.attributes.map(async name => {
+        dto.attributes.map(async (name) => {
           let doc = await this.attrModel.findOne({ name });
           if (!doc) doc = await this.attrModel.create({ name });
           return doc as any;
         }),
       );
-      plant.attributes = docs.map(d => d._id as Types.ObjectId);
+      plant.attributes = docs.map((d) => d._id as Types.ObjectId);
     }
     Object.assign(plant, dto);
     return plant.save();

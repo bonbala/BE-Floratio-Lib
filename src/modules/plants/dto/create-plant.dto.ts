@@ -8,43 +8,76 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 
 class TableItemDto {
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   title: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   content: string;
 }
 
 class SpeciesDescriptionDto {
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   title: string;
 
-  @IsArray() @ValidateNested({ each: true })
+  @IsArray()
+  @ValidateNested({ each: true })
   @Type(() => TableItemDto)
   tables: TableItemDto[];
 }
 
 export class CreatePlantDto {
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({
+    example: 'Abelia × grandiflora',
+    description: 'Scientific name of the plant',
+  })
   scientific_name: string;
 
-  @IsArray() @IsOptional()
+  @IsArray()
+  @IsOptional()
   @IsString({ each: true })
+  @ApiProperty({
+    example: ['Glossy abelia'],
+    description: 'Common names of the plant',
+  })
   common_name?: string[];
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({
+    example: 'Caprifoliaceae',
+    description: 'Family name reference',
+  })
   family: string; // name
 
-  @IsArray() @ArrayNotEmpty()
+  @IsArray()
+  @ArrayNotEmpty()
   @IsString({ each: true })
+  @ApiProperty({
+    example: ['Full Sun', 'Moderate Water'],
+    description: 'Attributes describing plant care',
+  })
   attributes: string[]; // names
 
   @IsOptional()
+  @ApiProperty({
+    example: [
+      'https://example.com/image1.jpg',
+      'https://example.com/image2.jpg',
+    ],
+    description: 'Array of image URLs',
+  })
   images?: any; // handled by Multer
 
-  @IsArray() @IsOptional()
+  @IsArray()
+  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => SpeciesDescriptionDto)
   species_description?: SpeciesDescriptionDto[];
