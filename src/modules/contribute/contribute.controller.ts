@@ -22,7 +22,7 @@ import { UpdateContributeDto } from './dto/update-contribute.dto';
 export class ContributeController {
   constructor(private readonly service: ContributeService) {}
 
-  @Post()
+  @Post('create')
   @Roles('user', 'admin')
   @ApiOperation({ summary: 'Create a new contribution' })
   @ApiBody({
@@ -43,7 +43,7 @@ export class ContributeController {
     return this.service.create(req.user.userId, dto);
   }
 
-  @Get()
+  @Get('list')
   @Roles('user', 'admin')
   @ApiOperation({ summary: 'Get all contributions' })
   @ApiResponse({ status: 200, description: 'List of contributions' })
@@ -51,7 +51,7 @@ export class ContributeController {
     return this.service.findAll();
   }
 
-  @Get(':id')
+  @Get('detail/:id')
   @Roles('user', 'admin')
   @ApiOperation({ summary: 'Get a specific contribution by ID' })
   @ApiParam({ name: 'id', description: 'Contribution ID' })
@@ -61,7 +61,7 @@ export class ContributeController {
     return this.service.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch('update/:id')
   @Roles('user', 'admin')
   @ApiOperation({ summary: 'Update a contribution' })
   @ApiParam({ name: 'id', description: 'Contribution ID' })
@@ -88,7 +88,7 @@ export class ContributeController {
     return this.service.update(req.user.userId, req.user.role, id, dto);
   }
 
-  @Delete(':id')
+  @Delete('delete/:id')
   @Roles('user', 'admin')
   @ApiOperation({ summary: 'Delete a contribution' })
   @ApiParam({ name: 'id', description: 'Contribution ID' })

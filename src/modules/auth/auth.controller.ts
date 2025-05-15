@@ -47,20 +47,4 @@ export class AuthController {
       dto.newPassword,
     );
   }
-
-  // Ví dụ endpoint chỉ cho role 'admin' truy cập
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
-  @Get('admin-only')
-  adminRoute() {
-    return { msg: 'Chỉ admin mới xem được' };
-  }
-
-  // Ví dụ endpoint yêu cầu permission 'create:user'
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('create:user')
-  @Post('create-user')
-  createUser(@Body() dto: SignupDto) {
-    // ...
-  }
 }

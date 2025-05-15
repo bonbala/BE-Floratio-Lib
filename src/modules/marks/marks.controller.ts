@@ -22,7 +22,7 @@ import { UpdateMarkDto } from './dto/update-mark.dto';
 export class MarksController {
   constructor(private readonly marksService: MarksService) {}
 
-  @Post()
+  @Post('create')
   @ApiOperation({ summary: 'Create a new mark for the authenticated user' })
   @ApiBody({
     description: 'Payload to create a mark',
@@ -53,14 +53,14 @@ export class MarksController {
     return this.marksService.findByUser(userId);
   }
 
-  @Get()
+  @Get('list')
   @ApiOperation({ summary: 'Retrieve all marks' })
   @ApiResponse({ status: 200, description: 'List of all marks' })
   findAll() {
     return this.marksService.findAll();
   }
 
-  @Get(':id')
+  @Get('detail/:id')
   @ApiOperation({ summary: 'Retrieve a single mark by ID' })
   @ApiParam({ name: 'id', description: 'Mark identifier' })
   @ApiResponse({ status: 200, description: 'Mark details' })
@@ -69,7 +69,7 @@ export class MarksController {
     return this.marksService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch('update/:id')
   @ApiOperation({ summary: 'Update an existing mark' })
   @ApiParam({ name: 'id', description: 'Mark identifier' })
   @ApiBody({
@@ -90,7 +90,7 @@ export class MarksController {
     return this.marksService.update(id, dto);
   }
 
-  @Delete(':id')
+  @Delete('delete/:id')
   @UseGuards(RolesGuard)
   @Roles('admin')
   remove(@Param('id') id: string) {

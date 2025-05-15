@@ -3,10 +3,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User } from './schemas/user.schema';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+
+  async findAll(): Promise<User[]> {
+    return this.userModel.find().exec();
+  }
 
   async findByUsername(username: string) {
     return this.userModel.findOne({ username }).exec();
@@ -22,7 +27,7 @@ export class UsersService {
     username: string,
     email: string,
     password: string,
-    roleId: Types.ObjectId,
+    roleId: Types.ObjectId | string,
   ) {
     const hash = await bcrypt.hash(password, 10);
     const created = new this.userModel({
@@ -41,5 +46,23 @@ export class UsersService {
 
   async validatePassword(password: string, hash: string) {
     return bcrypt.compare(password, hash);
+  }
+
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    const updated = await this.userModel
+      .findByIdAndUpdate(id, updateUserDto, { new: true })
+      .exec();
+    if (!updated) {
+      throw new NotFoundException(`User với id ${id} không tìm thấy`);
+    }
+    return updated;
+  }
+
+  async remove(id: string): Promise<User> {
+    const deleted = await this.userModel.findByIdAndDelete(id).exec();
+    if (!deleted) {
+      throw new NotFoundException(`User với id ${id} không tìm thấy`);
+    }
+    return deleted;
   }
 }
