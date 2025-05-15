@@ -8,6 +8,7 @@ import {
   Delete,
   UploadedFiles,
   UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -16,11 +17,15 @@ import { CreatePlantDto } from './dto/create-plant.dto';
 import { UpdatePlantDto } from './dto/update-plant.dto';
 import { PlantResponseDto } from './dto/plant-response.dto';
 import { File } from 'multer';
-
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
 @Controller('plants')
 export class PlantsController {
   constructor(private readonly plantsService: PlantsService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super-admin', 'admin')
   @Post('create')
   @ApiOperation({ summary: 'Create a new plant entry' })
   @ApiBody({
@@ -76,6 +81,8 @@ export class PlantsController {
     return this.plantsService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super-admin', 'admin')
   @Patch('update/:id')
   @ApiOperation({ summary: 'Update an existing plant' })
   @ApiParam({ name: 'id', description: 'Unique identifier of the plant' })
@@ -105,6 +112,8 @@ export class PlantsController {
     return this.plantsService.update(id, dto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super-admin', 'admin')
   @Delete('delete/:id')
   @ApiOperation({ summary: 'Remove a plant by ID' })
   @ApiParam({ name: 'id', description: 'Unique identifier of the plant' })
@@ -112,5 +121,17 @@ export class PlantsController {
   @ApiResponse({ status: 404, description: 'Plant not found' })
   remove(@Param('id') id: string) {
     return this.plantsService.remove(id);
+  }
+
+  @Get('attributes/list')
+  @ApiOperation({ summary: 'Get list attributes' })
+  async getAttributesList() {
+    return this.plantsService.findAllAttributes();
+  }
+
+  @Get('families/list')
+  @ApiOperation({ summary: 'Get list families' })
+  async getFamiliesList() {
+    return this.plantsService.findAllFamilies();
   }
 }
