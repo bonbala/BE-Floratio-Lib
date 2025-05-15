@@ -70,6 +70,7 @@ export class PlantsService {
 
   async findCompact(): Promise<
     Array<{
+      _id: string;
       scientific_name: string;
       family_name: string;
       image: string | null; // chỉ image đầu tiên
@@ -82,6 +83,7 @@ export class PlantsService {
       .lean();
 
     return plants.map((p) => ({
+      _id: (p._id as Types.ObjectId).toString(),
       scientific_name: p.scientific_name,
       family_name: (p.family_name as any)?.name,
       image:
