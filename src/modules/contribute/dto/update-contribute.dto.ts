@@ -5,8 +5,7 @@ import { ContributeStatus } from '../schemas/contribute.schema';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateContributeDto extends PartialType(CreateContributeDto) {
-
-   @ApiPropertyOptional({
+  @ApiPropertyOptional({
     description: 'Trạng thái contribution',
     enum: ContributeStatus,
     example: ContributeStatus.approved,
@@ -15,7 +14,10 @@ export class UpdateContributeDto extends PartialType(CreateContributeDto) {
   @IsEnum(ContributeStatus)
   status?: ContributeStatus;
 
-  @ApiPropertyOptional({ description: 'Lý do từ chối (nếu có)', example: 'Thiếu hình ảnh' })
+  @ApiPropertyOptional({
+    description: 'Lý do từ chối (nếu có)',
+    example: 'Thiếu hình ảnh',
+  })
   @IsOptional()
   @IsString()
   review_message?: string;

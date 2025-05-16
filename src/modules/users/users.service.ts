@@ -28,9 +28,17 @@ export class UsersService {
   }
 
   async findById(id: string) {
-    const user = await this.userModel.findById(id).exec();
+    const user = await this.userModel
+      .findById(id)
+      .populate('role', 'name')
+      .exec();
     if (!user) throw new NotFoundException('User not found');
-    return user;
+
+    const obj = user.toObject();
+    return {
+      ...obj,
+      role: (obj.role as any)?.name ?? null,
+    };
   }
 
   async create(

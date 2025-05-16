@@ -90,43 +90,47 @@ export class ContributeService {
   }
 
   async findAll(): Promise<ContributeSummaryDto[]> {
-    const items = await this.contribModel
-      .find()
-      .populate('user', 'username')
-      .populate('attributes', 'name')
-      .populate('reviewed_by', 'username')
-      .exec();
+  const items = await this.contribModel
+    .find()
+    .populate('user', 'username')
+    .populate('attributes', 'name')
+    .populate('reviewed_by', 'username')
+    .exec();
 
-    return items.map((item) => {
-      const user = item.user as any;
-      const reviewer = item.reviewed_by as any;
+  return items.map((item) => {
+    const user = item.user as any;
+    const reviewer = item.reviewed_by as any;
 
-      return {
-        _id: (item._id as Types.ObjectId).toString(),
-        user: {
-          _id: user._id.toString(),
-          username: user.username,
-        },
-        scientific_name: item.scientific_name,
-        description: item.description,
-        image:
-          Array.isArray(item.images) && item.images.length > 0
-            ? item.images[0]
-            : undefined,
-        attributes: (item.attributes as any[]).map((a) => a.name),
-        reviewed_by: reviewer
-          ? {
-              _id: reviewer._id.toString(),
-              username: reviewer.username,
-            }
-          : undefined,
-        // trả về thêm status
-        status: item.status,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-      };
-    });
-  }
+    // Đóng gói các thông tin plant liên quan vào contribute_plant
+    const contribute_plant = {
+      scientific_name: item.scientific_name,
+      common_name: item.common_name,
+      image: Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : undefined,
+      description: item.description,
+      attributes: (item.attributes as any[]).map((a) => a.name),
+      // species_description: item.species_description, // nếu muốn
+    };
+
+    return {
+      _id: (item._id as Types.ObjectId).toString(),
+      user: {
+        _id: user._id.toString(),
+        username: user.username,
+      },
+      contribute_plant,
+      reviewed_by: reviewer
+        ? {
+            _id: reviewer._id.toString(),
+            username: reviewer.username,
+          }
+        : undefined,
+      status: item.status,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    };
+  });
+}
+
 
   async findOne(id: string): Promise<ContributeResponseDto> {
     const item = await this.contribModel
