@@ -14,6 +14,11 @@ export enum ContributeStatus {
   rejected = 'rejected',
 }
 
+export enum ContributeType {
+  Update = 'update',
+  New = 'new',
+}
+
 @Schema({ timestamps: true })
 export class Contribute extends Document {
   @Prop({ type: Types.ObjectId, ref: User.name, required: true })
@@ -46,6 +51,13 @@ export class Contribute extends Document {
     default: ContributeStatus.pending,
   })
   status: ContributeStatus;
+
+  @Prop({
+    type: String,
+    enum: ContributeType,
+    required: true,
+  })
+  type: ContributeType;
 
   @Prop({ type: Types.ObjectId, ref: User.name })
   reviewed_by: Types.ObjectId;
