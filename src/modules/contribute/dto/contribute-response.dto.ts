@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ContributeStatus } from '../schemas/contribute.schema';
 import { SpeciesDescriptionDto } from './create-contribute.dto';
+import { ContributeType } from '../schemas/contribute.schema';
 
 export class ContributeResponseDto {
   @ApiProperty({ type: String, description: 'ID của contribution' })
@@ -34,6 +35,12 @@ export class ContributeResponseDto {
     description: 'Trạng thái',
   })
   status: ContributeStatus;
+
+  @ApiProperty({
+    enum: ContributeType,
+    description: 'Loại đóng góp',
+  })
+  type: ContributeType;
 
   // nếu cần hiển thị ai review
   @ApiPropertyOptional({

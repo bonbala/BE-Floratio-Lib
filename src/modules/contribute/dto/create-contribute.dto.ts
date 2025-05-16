@@ -6,8 +6,10 @@ import {
   ArrayUnique,
   IsMongoId,
   ValidateNested,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ContributeType } from '../schemas/contribute.schema';
 
 class TableItemDto {
   @IsString() title: string;
@@ -74,6 +76,13 @@ export class CreateContributeDto {
   @ValidateNested({ each: true })
   @Type(() => SpeciesDescriptionDto)
   species_description?: SpeciesDescriptionDto[];
+
+  @ApiProperty({
+    description: 'Loại đóng góp',
+    enum: ContributeType,
+  })
+  @IsEnum(ContributeType)
+  type: ContributeType;
 
   @ApiPropertyOptional({
     description: 'Family ID đề xuất',

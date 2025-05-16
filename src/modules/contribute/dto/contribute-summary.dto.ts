@@ -1,4 +1,5 @@
 // contribute-summary.dto.ts
+import { ContributeType } from '../schemas/contribute.schema';
 
 export class ContributeSummaryDto {
   _id: string;
@@ -13,6 +14,7 @@ export class ContributeSummaryDto {
   };
   reviewed_by?: { _id: string; username: string };
   status: string;
+  type: ContributeType;
   createdAt: Date;
   updatedAt: Date;
 }
