@@ -16,6 +16,9 @@ export class Plant extends Document {
   @Prop({ type: [String], default: [] })
   common_name: string[];
 
+  @Prop()
+  description: string;
+
   @Prop({ type: Types.ObjectId, ref: Family.name, required: true })
   family_name: Types.ObjectId;
 

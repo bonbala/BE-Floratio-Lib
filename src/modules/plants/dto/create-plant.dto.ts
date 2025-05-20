@@ -13,7 +13,7 @@ import { ApiProperty } from '@nestjs/swagger';
 class TableItemDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  label: string;
 
   @IsString()
   @IsNotEmpty()
@@ -23,12 +23,12 @@ class TableItemDto {
 class SpeciesDescriptionDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  section: string;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => TableItemDto)
-  tables: TableItemDto[];
+  details: TableItemDto[];
 }
 
 export class CreatePlantDto {

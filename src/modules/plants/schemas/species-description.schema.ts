@@ -4,7 +4,7 @@ import { Document } from 'mongoose';
 
 export class TableItem {
   @Prop({ required: true })
-  title: string;
+  label: string;
 
   @Prop({ required: true })
   content: string;
@@ -13,10 +13,10 @@ export class TableItem {
 @Schema({ _id: false })
 export class SpeciesDescription extends Document {
   @Prop({ required: true })
-  title: string;
+  section: string;
 
   @Prop({ type: [TableItem], required: true })
-  tables: TableItem[];
+  details: TableItem[];
 }
 
 export const TableItemSchema = SchemaFactory.createForClass(TableItem);
