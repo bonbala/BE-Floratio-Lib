@@ -20,9 +20,9 @@ export class PlantsService {
   ) {}
 
   async create(dto: CreatePlantDto, files?: File[]): Promise<Plant> {
-    let familyDoc = await this.famModel.findOne({ name: dto.family });
+    let familyDoc = await this.famModel.findOne({ name: dto.family_name });
     if (!familyDoc)
-      familyDoc = await this.famModel.create({ name: dto.family });
+      familyDoc = await this.famModel.create({ name: dto.family_name });
 
     const attrDocs = await Promise.all(
       dto.attributes.map(async (name) => {
@@ -43,7 +43,7 @@ export class PlantsService {
     const plant = new this.plantModel({
       scientific_name: dto.scientific_name,
       common_name: dto.common_name || [],
-      family: familyDoc._id as Types.ObjectId,
+      family_name: familyDoc._id as Types.ObjectId,
       attributes: attrDocs.map((a) => a._id as Types.ObjectId),
       images: imageUrls,
       species_description: dto.species_description || [],
@@ -118,9 +118,9 @@ export class PlantsService {
   async update(id: string, dto: UpdatePlantDto): Promise<Plant> {
     const plant = await this.plantModel.findById(id);
     if (!plant) throw new NotFoundException('Plant not found');
-    if (dto.family) {
-      let fam = await this.famModel.findOne({ name: dto.family });
-      if (!fam) fam = await this.famModel.create({ name: dto.family });
+    if (dto.family_name) {
+      let fam = await this.famModel.findOne({ name: dto.family_name });
+      if (!fam) fam = await this.famModel.create({ name: dto.family_name });
       plant.family_name = fam._id as Types.ObjectId;
     }
     if (dto.attributes) {

@@ -9,6 +9,8 @@ import {
   UploadedFiles,
   UseInterceptors,
   UseGuards,
+  HttpCode, 
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -84,6 +86,7 @@ export class PlantsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('super-admin', 'admin')
   @Patch('update/:id')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update an existing plant' })
   @ApiParam({ name: 'id', description: 'Unique identifier of the plant' })
   @ApiBody({
@@ -108,19 +111,27 @@ export class PlantsController {
     type: PlantResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Plant not found' })
-  update(@Param('id') id: string, @Body() dto: UpdatePlantDto) {
-    return this.plantsService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdatePlantDto) {
+    const updated = await this.plantsService.update(id, dto);
+    return {
+      message: 'Plant updated successfully',
+      data: updated,
+    };
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('super-admin', 'admin')
   @Delete('delete/:id')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remove a plant by ID' })
   @ApiParam({ name: 'id', description: 'Unique identifier of the plant' })
   @ApiResponse({ status: 204, description: 'Plant removed successfully' })
   @ApiResponse({ status: 404, description: 'Plant not found' })
-  remove(@Param('id') id: string) {
-    return this.plantsService.remove(id);
+  async remove(@Param('id') id: string) {
+    await this.plantsService.remove(id);
+    return {
+      message: 'Plant removed successfully',
+    };
   }
 
   @Get('attributes/list')
