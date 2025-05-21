@@ -9,7 +9,7 @@ import {
   UploadedFiles,
   UseInterceptors,
   UseGuards,
-  HttpCode, 
+  HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
@@ -22,6 +22,9 @@ import { File } from 'multer';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { CreateFamilyDto } from './dto/create-family.dto';
+import { Family } from './schemas/family.schema';
+import { UpdateFamilyDto } from './dto/update-family.dto';
 @Controller('plants')
 export class PlantsController {
   constructor(private readonly plantsService: PlantsService) {}
@@ -140,9 +143,54 @@ export class PlantsController {
     return this.plantsService.findAllAttributes();
   }
 
+  // --- Family endpoints under /plants/families ---
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super-admin', 'admin')
+  @Post('families/create')
+  @ApiOperation({ summary: 'Create family' })
+  @ApiBody({ type: CreateFamilyDto })
+  @ApiResponse({ status: 201, type: Family })
+  createFamily(@Body() dto: CreateFamilyDto): Promise<Family> {
+    return this.plantsService.createFamily(dto);
+  }
+
   @Get('families/list')
   @ApiOperation({ summary: 'Get list families' })
   async getFamiliesList() {
     return this.plantsService.findAllFamilies();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super-admin', 'admin')
+  @Get('families/detail/:id')
+  @ApiOperation({ summary: 'Get family by id' })
+  @ApiParam({ name: 'id', description: 'Family ID' })
+  @ApiResponse({ status: 200, type: Family })
+  findFamily(@Param('id') id: string): Promise<Family> {
+    return this.plantsService.findFamilyById(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super-admin', 'admin')
+  @Patch('families/update/:id')
+  @ApiOperation({ summary: 'Update family' })
+  @ApiParam({ name: 'id', description: 'Family ID' })
+  @ApiBody({ type: UpdateFamilyDto })
+  @ApiResponse({ status: 200, type: Family })
+  updateFamily(
+    @Param('id') id: string,
+    @Body() dto: UpdateFamilyDto,
+  ): Promise<Family> {
+    return this.plantsService.updateFamily(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super-admin', 'admin')
+  @Delete('families/delete/:id')
+  @ApiOperation({ summary: 'Delete family' })
+  @ApiParam({ name: 'id', description: 'Family ID' })
+  @ApiResponse({ status: 204 })
+  deleteFamily(@Param('id') id: string): Promise<void> {
+    return this.plantsService.deleteFamily(id);
   }
 }
