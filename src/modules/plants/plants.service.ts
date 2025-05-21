@@ -1,5 +1,5 @@
 // src/plants/plants.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Plant } from './schemas/plant.schema';
@@ -9,6 +9,8 @@ import { CreatePlantDto } from './dto/create-plant.dto';
 import { UpdatePlantDto } from './dto/update-plant.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { File } from 'multer';
+import { CreateFamilyDto } from './dto/create-family.dto';
+import { UpdateFamilyDto } from './dto/update-family.dto';
 
 @Injectable()
 export class PlantsService {
@@ -147,8 +149,49 @@ export class PlantsService {
     return this.attrModel.find().exec();
   }
 
-  /** Lấy danh sách tất cả families */
+  // --- Family CRUD methods ---
+  async createFamily(dto: CreateFamilyDto): Promise<Family> {
+    const exists = await this.famModel.findOne({ name: dto.name }).exec();
+    if (exists) {
+      throw new ConflictException(`Family name "${dto.name}" already exists`);
+    }
+    const fam = new this.famModel(dto);
+    return fam.save();
+  }
+
   async findAllFamilies(): Promise<Family[]> {
     return this.famModel.find().exec();
+  }
+
+  async findFamilyById(id: string): Promise<Family> {
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException(`Family id "${id}" invalid`);
+    const fam = await this.famModel.findById(id).exec();
+    if (!fam) throw new NotFoundException(`Family "${id}" not found`);
+    return fam;
+  }
+
+  async updateFamily(id: string, dto: UpdateFamilyDto): Promise<Family> {
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException(`Family id "${id}" invalid`);
+    // check exists
+    const fam = await this.famModel.findById(id).exec();
+    if (!fam) throw new NotFoundException(`Family with id "${id}" not found`);
+    // if changing name, ensure unique
+    if (dto.name && dto.name !== fam.name) {
+      const dup = await this.famModel.findOne({ name: dto.name }).exec();
+      if (dup) {
+        throw new ConflictException(`Family name "${dto.name}" already exists`);
+      }
+    }
+    Object.assign(fam, dto);
+    return fam.save();
+  }
+
+  async deleteFamily(id: string): Promise<void> {
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException(`Family id "${id}" invalid`);
+    const res = await this.famModel.findByIdAndDelete(id).exec();
+    if (!res) throw new NotFoundException(`Family with id "${id}" not found`);
   }
 }
