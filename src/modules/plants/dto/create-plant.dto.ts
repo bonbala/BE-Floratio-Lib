@@ -55,7 +55,7 @@ export class CreatePlantDto {
     example: 'Caprifoliaceae',
     description: 'Family name reference',
   })
-  family: string; // name
+  family_name: string; // name
 
   @IsArray()
   @ArrayNotEmpty()
