@@ -10,6 +10,7 @@ async function bootstrap() {
       'http://localhost:3000',
       'https://floratio-lib-client.vercel.app',
       'https://floratio-lib-admin.vercel.app',
+      'https://flora-lib-admin.vercel.app',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
