@@ -11,6 +11,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -25,6 +26,10 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { CreateFamilyDto } from './dto/create-family.dto';
 import { Family } from './schemas/family.schema';
 import { UpdateFamilyDto } from './dto/update-family.dto';
+// import { PaginationQueryDto } from './dto/pagination-query.dto';
+import { PlantListQueryDto } from './dto/plant-list-query.dto';
+import { PlantsPaginationDoc } from './docs/pagination.doc';
+
 @Controller('plants')
 export class PlantsController {
   constructor(private readonly plantsService: PlantsService) {}
@@ -84,6 +89,13 @@ export class PlantsController {
   @ApiResponse({ status: 404, description: 'Plant not found' })
   findOne(@Param('id') id: string) {
     return this.plantsService.findOne(id);
+  }
+
+  @Get('pagination')
+  @PlantsPaginationDoc()
+  async listPaginated(@Query() query: PlantListQueryDto) {
+    console.log('💬 queryDto.attributes =', query.attributes);
+    return this.plantsService.findFiltered(query);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
