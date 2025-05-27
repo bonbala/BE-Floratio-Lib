@@ -1,7 +1,11 @@
 // src/plants/plants.service.ts
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, FilterQuery } from 'mongoose';
 import { Plant } from './schemas/plant.schema';
 import { Family } from './schemas/family.schema';
 import { Attribute } from './schemas/attribute.schema';
@@ -11,6 +15,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { File } from 'multer';
 import { CreateFamilyDto } from './dto/create-family.dto';
 import { UpdateFamilyDto } from './dto/update-family.dto';
+import { PlantListQueryDto } from './dto/plant-list-query.dto';
 
 @Injectable()
 export class PlantsService {
@@ -97,6 +102,60 @@ export class PlantsService {
         ? (p as any).attributes.map((a: any) => a.name)
         : [],
     }));
+  }
+
+  /** Lấy danh sách plants theo phân trang, tối đa 100 bản ghi mỗi trang */
+  async findPaginated(
+    page = 1,
+    limit = 100,
+  ): Promise<{
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    totalItems: number;
+    data: {
+      _id: string;
+      scientific_name: string;
+      family_name: string;
+      image: string | null;
+      common_name: string[];
+      attributes: string[];
+    }[];
+  }> {
+    // đảm bảo giới hạn tối đa 100
+    const pageSize = Math.min(limit, 100);
+    const skip = (page - 1) * pageSize;
+
+    const [plants, totalItems] = await Promise.all([
+      this.plantModel
+        .find()
+        .skip(skip)
+        .limit(pageSize)
+        .populate('family_name', 'name')
+        .populate('attributes', 'name')
+        .lean(),
+      this.plantModel.countDocuments(),
+    ]);
+
+    const data = plants.map((p) => ({
+      _id: (p._id as Types.ObjectId).toString(),
+      scientific_name: p.scientific_name,
+      family_name: (p.family_name as any)?.name,
+      image:
+        Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null,
+      common_name: p.common_name,
+      attributes: Array.isArray((p as any).attributes)
+        ? (p as any).attributes.map((a: any) => a.name)
+        : [],
+    }));
+
+    return {
+      page,
+      pageSize,
+      totalPages: Math.ceil(totalItems / pageSize),
+      totalItems,
+      data,
+    };
   }
 
   async findOne(id: string): Promise<any> {
@@ -193,5 +252,71 @@ export class PlantsService {
       throw new NotFoundException(`Family id "${id}" invalid`);
     const res = await this.famModel.findByIdAndDelete(id).exec();
     if (!res) throw new NotFoundException(`Family with id "${id}" not found`);
+  }
+
+  // Service Filter và Phân trang Plants List
+  async findFiltered(queryDto: PlantListQueryDto) {
+    const { page, limit, family, attributes, search } = queryDto;
+
+    const pageSize = Math.min(limit ?? 100, 100);
+    const skip = ((page ?? 1) - 1) * pageSize;
+
+    /* ---------- xây query động ---------- */
+    const filter: FilterQuery<Plant> = {};
+
+    if (family) {
+      filter.family_name = new Types.ObjectId(family);
+    }
+
+    if (attributes?.length) {
+      filter.attributes = {
+        $all: attributes.map((id) => new Types.ObjectId(id)),
+      };
+    }
+
+    if (search) {
+      const regex = new RegExp(search, 'i'); // bỏ qua hoa/thường
+      filter.$or = [
+        { scientific_name: regex },
+        { common_name: regex }, // ← đã sửa
+      ];
+    }
+
+    /* ---------- thực thi ---------- */
+    const [plants, totalItems] = await Promise.all([
+      this.plantModel
+        .find(filter, {
+          scientific_name: 1,
+          common_name: 1,
+          family_name: 1,
+          images: { $slice: 1 },
+          attributes: 1,
+        })
+        .skip(skip)
+        .limit(pageSize)
+        .populate('family_name', 'name')
+        .populate('attributes', 'name')
+        .lean(),
+      this.plantModel.countDocuments(filter),
+    ]);
+
+    const data = plants.map((p) => ({
+      _id: p._id.toString(),
+      scientific_name: p.scientific_name,
+      family_name: (p.family_name as any)?.name,
+      image: p.images?.[0] ?? null,
+      common_name: p.common_name,
+      attributes: Array.isArray(p.attributes)
+        ? (p.attributes as any[]).map((a) => a.name)
+        : [],
+    }));
+
+    return {
+      page: page ?? 1,
+      pageSize,
+      totalPages: Math.ceil(totalItems / pageSize),
+      totalItems,
+      data,
+    };
   }
 }

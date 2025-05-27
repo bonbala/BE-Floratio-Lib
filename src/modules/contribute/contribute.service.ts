@@ -130,7 +130,7 @@ export class ContributeService {
             }
           : undefined,
         status: item.status,
-        type: item.type, 
+        type: item.type,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
       };
