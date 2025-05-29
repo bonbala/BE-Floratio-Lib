@@ -50,6 +50,14 @@ export class CreatePlantDto {
   common_name?: string[];
 
   @IsString()
+  @IsOptional()
+  @ApiProperty({
+    example: 'Description',
+    description: 'Description of the plant',
+  })
+  description?: string;
+
+  @IsString()
   @IsNotEmpty()
   @ApiProperty({
     example: 'Caprifoliaceae',

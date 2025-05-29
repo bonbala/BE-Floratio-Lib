@@ -7,6 +7,7 @@ import { Plant, PlantSchema } from './schemas/plant.schema';
 import { Family, FamilySchema } from './schemas/family.schema';
 import { Attribute, AttributeSchema } from './schemas/attribute.schema';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { HistoryModule } from '../history/history.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
       { name: Attribute.name, schema: AttributeSchema },
     ]),
     CloudinaryModule,
+    HistoryModule,
   ],
   providers: [PlantsService],
   controllers: [PlantsController],

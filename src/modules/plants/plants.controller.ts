@@ -12,8 +12,15 @@ import {
   HttpCode,
   HttpStatus,
   Query,
+  Request,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { PlantsService } from './plants.service';
 import { CreatePlantDto } from './dto/create-plant.dto';
@@ -29,6 +36,7 @@ import { UpdateFamilyDto } from './dto/update-family.dto';
 // import { PaginationQueryDto } from './dto/pagination-query.dto';
 import { PlantListQueryDto } from './dto/plant-list-query.dto';
 import { PlantsPaginationDoc } from './docs/pagination.doc';
+import { PlantStatsResponseDto } from './dto/plant-stats.dto';
 
 @Controller('plants')
 export class PlantsController {
@@ -126,8 +134,12 @@ export class PlantsController {
     type: PlantResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Plant not found' })
-  async update(@Param('id') id: string, @Body() dto: UpdatePlantDto) {
-    const updated = await this.plantsService.update(id, dto);
+  async update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: UpdatePlantDto,
+  ) {
+    const updated = await this.plantsService.update(id, dto, req.user.userId);
     return {
       message: 'Plant updated successfully',
       data: updated,
@@ -142,8 +154,8 @@ export class PlantsController {
   @ApiParam({ name: 'id', description: 'Unique identifier of the plant' })
   @ApiResponse({ status: 204, description: 'Plant removed successfully' })
   @ApiResponse({ status: 404, description: 'Plant not found' })
-  async remove(@Param('id') id: string) {
-    await this.plantsService.remove(id);
+  async remove(@Request() req: any, @Param('id') id: string) {
+    await this.plantsService.remove(id, req.user.userId);
     return {
       message: 'Plant removed successfully',
     };
@@ -204,5 +216,12 @@ export class PlantsController {
   @ApiResponse({ status: 204 })
   deleteFamily(@Param('id') id: string): Promise<void> {
     return this.plantsService.deleteFamily(id);
+  }
+
+  @Get('families/stats')
+  @ApiOperation({ summary: 'Tổng số cây và số cây theo từng họ' })
+  @ApiOkResponse({ type: PlantStatsResponseDto })
+  async getFamilyStats() {
+    return this.plantsService.getFamilyStats();
   }
 }
