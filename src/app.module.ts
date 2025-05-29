@@ -9,6 +9,7 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PlantsModule } from './modules/plants/plants.module';
 import { MarksModule } from './modules/marks/marks.module';
 import { ContributeModule } from './modules/contribute/contribute.module';
+import { HistoryModule } from './modules/history/history.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ContributeModule } from './modules/contribute/contribute.module';
     PlantsModule,
     MarksModule,
     ContributeModule,
+    HistoryModule,
   ],
   controllers: [],
   providers: [],

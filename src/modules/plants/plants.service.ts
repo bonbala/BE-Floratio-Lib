@@ -16,6 +16,8 @@ import { File } from 'multer';
 import { CreateFamilyDto } from './dto/create-family.dto';
 import { UpdateFamilyDto } from './dto/update-family.dto';
 import { PlantListQueryDto } from './dto/plant-list-query.dto';
+import { PlantStatsResponseDto } from './dto/plant-stats.dto';
+import { HistoryService } from '../history/history.service';
 
 @Injectable()
 export class PlantsService {
@@ -24,6 +26,7 @@ export class PlantsService {
     @InjectModel(Family.name) private famModel: Model<Family>,
     @InjectModel(Attribute.name) private attrModel: Model<Attribute>,
     private readonly cloudinary: CloudinaryService,
+    private readonly historyService: HistoryService,
   ) {}
 
   async create(dto: CreatePlantDto, files?: File[]): Promise<Plant> {
@@ -176,31 +179,54 @@ export class PlantsService {
     };
   }
 
-  async update(id: string, dto: UpdatePlantDto): Promise<Plant> {
+  async update(
+    id: string,
+    dto: UpdatePlantDto,
+    userId: string,
+  ): Promise<Plant> {
+    // Lấy bản ghi trước khi thay đổi
     const plant = await this.plantModel.findById(id);
     if (!plant) throw new NotFoundException('Plant not found');
+
+    const beforeSnapshot = plant.toObject();
+
+    // Xử lý family_name nếu có
     if (dto.family_name) {
       let fam = await this.famModel.findOne({ name: dto.family_name });
       if (!fam) fam = await this.famModel.create({ name: dto.family_name });
       plant.family_name = fam._id as Types.ObjectId;
     }
+
+    // Xử lý attributes nếu có
     if (dto.attributes) {
       const docs = await Promise.all(
         dto.attributes.map(async (name) => {
           let doc = await this.attrModel.findOne({ name });
           if (!doc) doc = await this.attrModel.create({ name });
-          return doc as any;
+          return doc;
         }),
       );
       plant.attributes = docs.map((d) => d._id as Types.ObjectId);
     }
+
+    // Áp dụng các field còn lại
     Object.assign(plant, dto);
-    return plant.save();
+
+    const updated = await plant.save();
+
+    // Ghi lịch sử
+    await this.historyService.createOnUpdate(id, beforeSnapshot, userId);
+    return updated;
   }
 
-  async remove(id: string): Promise<void> {
-    const res = await this.plantModel.findByIdAndDelete(id);
-    if (!res) throw new NotFoundException('Plant not found');
+  async remove(id: string, userId: string): Promise<void> {
+    const plant = await this.plantModel.findById(id);
+    if (!plant) throw new NotFoundException('Plant not found');
+
+    const beforeSnapshot = plant.toObject();
+
+    await this.plantModel.findByIdAndDelete(id);
+    await this.historyService.createOnDelete(id, beforeSnapshot, userId);
   }
 
   /** Lấy danh sách tất cả attributes */
@@ -318,5 +344,36 @@ export class PlantsService {
       totalItems,
       data,
     };
+  }
+
+  // Service Stats tổng hợp số lượng loài từng họ
+  async getFamilyStats(): Promise<PlantStatsResponseDto> {
+    /* ---------- tổng số cây ---------- */
+    const totalPlants = await this.plantModel.countDocuments();
+
+    /* ---------- thống kê theo họ ---------- */
+    const agg = await this.plantModel.aggregate([
+      { $group: { _id: '$family_name', count: { $sum: 1 } } },
+      {
+        $lookup: {
+          from: 'families',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'family',
+        },
+      },
+      { $unwind: '$family' },
+      {
+        $project: {
+          _id: 0,
+          family_id: { $toString: '$_id' },
+          family_name: '$family.name',
+          count: 1,
+        },
+      },
+      { $sort: { count: -1 } },
+    ]);
+
+    return { totalPlants, families: agg };
   }
 }
