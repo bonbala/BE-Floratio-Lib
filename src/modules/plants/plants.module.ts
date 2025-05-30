@@ -21,5 +21,6 @@ import { HistoryModule } from '../history/history.module';
   ],
   providers: [PlantsService],
   controllers: [PlantsController],
+  exports: [PlantsService],
 })
 export class PlantsModule {}

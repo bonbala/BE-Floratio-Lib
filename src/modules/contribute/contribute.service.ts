@@ -1,230 +1,222 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import {
-  Contribute,
-  ContributeStatus,
-  ContributeDocument,
-} from './schemas/contribute.schema';
+import { Model } from 'mongoose';
+import { Contribute } from './schemas/contribute.schema';
 import { CreateContributeDto } from './dto/create-contribute.dto';
-import { UpdateContributeDto } from './dto/update-contribute.dto';
-import { ContributeResponseDto } from './dto/contribute-response.dto';
-import { ContributeSummaryDto } from './dto/contribute-summary.dto';
-import { CloudinaryService } from '../cloudinary/cloudinary.service'; // import thêm
-import { Express } from 'express';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { PlantsService } from '../plants/plants.service';
+import { UpdatePlantDto } from '../plants/dto/update-plant.dto';
+
+// src/types/upload-file.type.ts
+export type UploadFile = {
+  buffer: Buffer;
+  originalname: string;
+  mimetype: string;
+  // nếu cần có thêm field Multer hỗ trợ thì bổ sung
+};
+
+type UpdateStatusContributeInput = {
+  status: 'pending' | 'approved' | 'rejected';
+  reviewedBy: string;
+  reviewMsg?: string;
+};
+
 @Injectable()
-export class ContributeService {
+export class ContributesService {
   constructor(
     @InjectModel(Contribute.name)
-    private contribModel: Model<ContributeDocument>,
-    private readonly cloudinary: CloudinaryService,
+    private contributeModel: Model<Contribute>,
+    private cloudinaryService: CloudinaryService,
+    private readonly plantsService: PlantsService,
   ) {}
 
+  private async uploadFiles(files: any[], folder: string): Promise<string[]> {
+    if (!files || files.length === 0) return [];
+    const uploaded = await Promise.all(
+      files.map((file) =>
+        // file.buffer là buffer, truyền vào đúng hàm uploadImage
+        this.cloudinaryService.uploadImage(file.buffer, folder),
+      ),
+    );
+    return uploaded; // là mảng các link
+  }
+
   async create(
-    userId: string,
     dto: CreateContributeDto,
-    files: any[] = [], // nhận files từ controller
-  ): Promise<ContributeResponseDto> {
-    // 1. Upload tất cả file lên Cloudinary
-    const imageUrls: string[] = [];
-    for (const file of files) {
-      // file.buffer phải được cấu hình memoryStorage trong controller
-      const url = await this.cloudinary.uploadImage(file.buffer);
-      imageUrls.push(url);
-    }
+    files: { images?: any[]; newImages?: any[] },
+    userId: string,
+  ) {
+    const images = files.images
+      ? await this.uploadFiles(files.images, 'contribute')
+      : [];
+    const newImages = files.newImages
+      ? await this.uploadFiles(files.newImages, 'contribute')
+      : [];
 
-    // 2. Chuẩn bị data để lưu
-    const data: Partial<Contribute> = {
-      user: new Types.ObjectId(userId),
-      scientific_name: dto.scientific_name,
-      common_name: dto.common_name || [],
-      description: dto.description,
-      // DTO attributes gửi lên là array of attribute IDs
-      attributes: dto.attributes?.map((id) => new Types.ObjectId(id)) || [],
-      // images bây giờ là URL từ Cloudinary
-      images: imageUrls,
-      species_description: dto.species_description || [],
-      suggested_family: dto.suggested_family
-        ? new Types.ObjectId(dto.suggested_family)
-        : undefined,
-      status: ContributeStatus.pending,
-      type: dto.type,
-    };
-
-    // 3. Lưu document và trả response qua ContributeResponseDto
-    const created = await new this.contribModel(data).save();
-    return this.toResponseDto(created);
+    const contribute = new this.contributeModel({
+      ...dto,
+      images,
+      newImages,
+      c_user: userId,
+    });
+    return contribute.save();
   }
 
-  /** helper để mapping document → DTO */
-  private toResponseDto(item: ContributeDocument): ContributeResponseDto {
-    const user = item.user as any;
-    const reviewer = item.reviewed_by as any;
-    return {
-      _id: (item._id as Types.ObjectId).toString(),
-      user: {
-        _id: user._id.toString(),
-        username: user.username,
-      },
-      scientific_name: item.scientific_name,
-      common_name: item.common_name,
-      description: item.description,
-      attributes: (item.attributes as any[]).map((a) => a.name),
-      images: item.images,
-      species_description: item.species_description,
-      suggested_family: item.suggested_family?.toString(),
-      status: item.status,
-      type: item.type,
-      reviewed_by: reviewer
-        ? {
-            _id: reviewer._id.toString(),
-            username: reviewer.username,
-          }
-        : undefined,
-      review_message: item.review_message,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-    };
-  }
-
-  async findAll(): Promise<ContributeSummaryDto[]> {
-    const items = await this.contribModel
+  async findAll() {
+    const contributes = await this.contributeModel
       .find()
-      .populate('user', 'username')
-      .populate('attributes', 'name')
-      .populate('reviewed_by', 'username')
-      .exec();
+      .populate('c_user', 'username _id')
+      .populate('reviewed_by', 'username _id')
+      .lean();
 
-    return items.map((item) => {
-      const user = item.user as any;
-      const reviewer = item.reviewed_by as any;
+    return contributes.map((item) => {
+      let plantData;
+      let newImages;
 
-      // Đóng gói các thông tin plant liên quan vào contribute_plant
-      const contribute_plant = {
-        scientific_name: item.scientific_name,
-        common_name: item.common_name,
-        image:
-          Array.isArray(item.images) && item.images.length > 0
-            ? item.images[0]
-            : undefined,
-        description: item.description,
-        attributes: (item.attributes as any[]).map((a) => a.name),
-        // species_description: item.species_description, // nếu muốn
-      };
+      // Nếu là dạng mới (có data.contribute_plant)
+      if (item.data?.contribute_plant) {
+        plantData = item.data.contribute_plant;
+        newImages = item.data?.newImages || [];
+      } else {
+        // Nếu là dạng cũ (dữ liệu cây nằm ngoài)
+        // Lấy tất cả field của item, trừ các field contribute
+        // Có thể loại bỏ các trường liên quan đến contribute, chỉ giữ lại info của plant
+        const {
+          _id,
+          c_user,
+          type,
+          status,
+          reviewed_by,
+          review_message,
+          data,
+          __v,
+          createdAt,
+          updatedAt, // Các field contribute
+          ...plant
+        } = item;
+
+        plantData = plant;
+        newImages = [];
+      }
 
       return {
-        _id: (item._id as Types.ObjectId).toString(),
-        user: {
-          _id: user._id.toString(),
-          username: user.username,
-        },
-        contribute_plant,
-        reviewed_by: reviewer
-          ? {
-              _id: reviewer._id.toString(),
-              username: reviewer.username,
-            }
-          : undefined,
-        status: item.status,
+        _id: item._id,
+        c_user: item.c_user,
+        c_message: item.c_message,
         type: item.type,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
+        status: item.status,
+        reviewed_by: item.reviewed_by || undefined,
+        review_message: item.review_message || undefined,
+        data: {
+          plant: plantData,
+          newImages,
+        },
       };
     });
   }
 
-  async findOne(id: string): Promise<ContributeResponseDto> {
-    const item = await this.contribModel
+  async findOne(id: string) {
+    const item = await this.contributeModel
       .findById(id)
-      .populate('user', 'username')
-      .populate('attributes', 'name')
-      .populate('reviewed_by', 'username')
-      .exec();
+      .populate('c_user', 'username _id')
+      .populate('reviewed_by', 'username _id')
+      .lean();
 
-    if (!item) {
-      throw new NotFoundException('Contribution not found');
+    if (!item) return null;
+
+    let plantData;
+    let newImages;
+
+    if (item.data?.contribute_plant) {
+      plantData = item.data.contribute_plant;
+      newImages = item.data?.newImages || [];
+    } else {
+      const {
+        _id,
+        c_user,
+        type,
+        status,
+        reviewed_by,
+        review_message,
+        data,
+        __v,
+        ...plant
+      } = item;
+
+      plantData = plant;
+      newImages = [];
     }
 
     return {
-      _id: (item._id as Types.ObjectId).toString(),
-      user: {
-        _id:
-          (item.user as any)._1d?.toString() ??
-          (item.user as any)._id.toString(),
-        username: (item.user as any).username,
-      },
-      scientific_name: item.scientific_name,
-      common_name: item.common_name,
-      description: item.description,
-      attributes: (item.attributes as any[]).map((a) => a.name),
-      images: item.images,
-      species_description: item.species_description,
-      suggested_family: item.suggested_family?.toString(),
-      status: item.status,
+      _id: item._id,
+      c_user: item.c_user,
+      c_message: item.c_message,
       type: item.type,
-      reviewed_by: item.reviewed_by
-        ? {
-            _id: (item.reviewed_by as any)._id.toString(),
-            username: (item.reviewed_by as any).username,
-          }
-        : undefined,
-      review_message: item.review_message,
+      status: item.status,
+      reviewed_by: item.reviewed_by || undefined,
+      review_message: item.review_message || undefined,
+      data: {
+        plant: plantData,
+        newImages,
+      },
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
     };
   }
 
-  async update(
-    userId: string,
-    role: string,
-    id: string,
-    dto: UpdateContributeDto,
-  ): Promise<Contribute> {
-    const item = await this.contribModel.findById(id).exec();
-    if (!item) throw new NotFoundException('Contribution not found');
+async updateStatus(
+  id: string,
+  status: 'pending' | 'approved' | 'rejected',
+  reviewedBy: string,
+  reviewMsg?: string,
+) {
+  const contribute = await this.contributeModel.findById(id);
+  if (!contribute) throw new NotFoundException('Contribute not found');
 
-    if (dto.status) {
-      if (role !== 'admin')
-        throw new ForbiddenException('Only admins can change status');
-      item.status = dto.status;
-      item.reviewed_by = new Types.ObjectId(userId);
-      if (dto.review_message) item.review_message = dto.review_message;
-    }
+  if (status === 'approved') {
+    // Lấy plantId (sửa lại đúng field)
+    const plantId =
+      (contribute as any).plant_id ||
+      ((contribute as any).plant && (contribute as any).plant._id) ||
+      ((contribute as any).contribute_plant && (contribute as any).contribute_plant._id);
 
-    if (
-      item.status === ContributeStatus.pending &&
-      item.user.toString() === userId
-    ) {
-      item.scientific_name = dto.scientific_name ?? item.scientific_name;
-      item.common_name = dto.common_name ?? item.common_name;
-      item.description = dto.description ?? item.description;
-      item.attributes =
-        dto.attributes?.map((id) => new Types.ObjectId(id)) ?? item.attributes;
-      item.images = dto.images ?? item.images;
-      item.species_description =
-        dto.species_description ?? item.species_description;
-      item.suggested_family = dto.suggested_family
-        ? new Types.ObjectId(dto.suggested_family)
-        : item.suggested_family;
-    }
+    if (!plantId) throw new NotFoundException('PlantId not found in contribute');
 
-    return item.save();
+    // Merge images
+    const mergedImages = [
+      ...((contribute as any).images || []),
+      ...((contribute as any).newImages || []),
+    ];
+
+    // Tạo payload update plant (lấy field nào thực sự có)
+    const updatePlantDto = {
+      ...((contribute as any).contribute_plant || {}),
+      images: mergedImages,
+    };
+
+    // Gọi đúng hàm update plant
+    await this.plantsService.update(
+      plantId,
+      updatePlantDto,
+      reviewedBy,
+      (contribute as any).c_user // Người đóng góp
+    );
   }
 
-  async remove(
-    userId: string,
-    role: string,
-    id: string,
-  ): Promise<{ deleted: boolean }> {
-    const item = await this.contribModel.findById(id).exec();
-    if (!item) throw new NotFoundException('Contribution not found');
-    if (item.user.toString() !== userId && role !== 'admin')
-      throw new ForbiddenException('Not allowed to delete');
-    await this.contribModel.findByIdAndDelete(id).exec();
-    return { deleted: true };
+  // Update lại contribute status
+  return this.contributeModel.findByIdAndUpdate(
+    id,
+    {
+      status,
+      reviewed_by: reviewedBy,
+      review_message: reviewMsg,
+    },
+    { new: true }
+  );
+}
+
+
+  async delete(id: string) {
+    return this.contributeModel.findByIdAndDelete(id);
   }
 }

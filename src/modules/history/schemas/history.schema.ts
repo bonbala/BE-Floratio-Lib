@@ -26,6 +26,9 @@ export class History {
   /** Ai thực hiện (nếu muốn) */
   @Prop({ type: Types.ObjectId, ref: 'User' })
   updatedBy?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  contribute_by?: Types.ObjectId;
 }
 
 export const HistorySchema = SchemaFactory.createForClass(History);
