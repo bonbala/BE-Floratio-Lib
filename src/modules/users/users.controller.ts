@@ -98,8 +98,21 @@ export class UsersController {
     description: 'User successfully updated',
     type: User,
   })
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    const { roleName, ...rest } = updateUserDto as any;
+    const updateData: any = { ...rest };
+
+    // Nếu có thay đổi roleName thì tìm ObjectId của Role
+    if (roleName) {
+      const role = await this.rolesService.findByName(roleName);
+      updateData.role = (role._id as any).toString();
+    }
+
+    // Thực hiện update
+    await this.usersService.update(id, updateData);
+
+    // Trả về đối tượng đã populate để client nhận được role.name
+    return this.usersService.findById(id);
   }
 
   /**

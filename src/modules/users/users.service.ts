@@ -66,14 +66,21 @@ export class UsersService {
     return bcrypt.compare(password, hash);
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async update(id: string, updateData: any): Promise<any> {
     const updated = await this.userModel
-      .findByIdAndUpdate(id, updateUserDto, { new: true })
+      .findByIdAndUpdate(id, updateData, { new: true })
+      .populate('role', 'name') // populate role
       .exec();
+
     if (!updated) {
       throw new NotFoundException(`User với id ${id} không tìm thấy`);
     }
-    return updated;
+
+    const obj = updated.toObject();
+    return {
+      ...obj,
+      role: (obj.role as any)?.name ?? null,
+    };
   }
 
   async remove(id: string): Promise<User> {

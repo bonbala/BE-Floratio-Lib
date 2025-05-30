@@ -183,6 +183,7 @@ export class PlantsService {
     id: string,
     dto: UpdatePlantDto,
     userId: string,
+    contributeBy?: string, // <-- Thêm tham số này (tùy chọn)
   ): Promise<Plant> {
     // Lấy bản ghi trước khi thay đổi
     const plant = await this.plantModel.findById(id);
@@ -214,8 +215,13 @@ export class PlantsService {
 
     const updated = await plant.save();
 
-    // Ghi lịch sử
-    await this.historyService.createOnUpdate(id, beforeSnapshot, userId);
+    // Ghi lịch sử (lưu thêm cả contributeBy nếu có)
+    await this.historyService.createOnUpdate(
+      id,
+      beforeSnapshot,
+      userId,
+      contributeBy,
+    );
     return updated;
   }
 

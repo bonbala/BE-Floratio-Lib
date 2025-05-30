@@ -35,4 +35,7 @@ export class CreateHistoryDto {
     example: '64e38e0b23fe0f73c4d3b991',
   })
   updatedBy?: Types.ObjectId;
+
+  @ApiPropertyOptional({ description: 'User ID chủ đóng góp' })
+  contributeBy?: Types.ObjectId;
 }
