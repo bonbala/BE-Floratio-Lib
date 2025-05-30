@@ -23,7 +23,7 @@ export class Contribute extends Document {
 
   @Prop({ type: Object })
   data: {
-    contribute_plant: any; // lưu theo format của plant (schema đầy đủ)
+    plant: any; // lưu theo format của plant (schema đầy đủ)
     newImages?: string[];
   };
 
