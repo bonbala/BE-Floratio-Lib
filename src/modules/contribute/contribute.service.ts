@@ -21,6 +21,27 @@ type UpdateStatusContributeInput = {
   reviewMsg?: string;
 };
 
+// 🔸 helper: ép attributes & family về string
+function normalizePlant(plant: any) {
+  if (!plant) return {};
+
+  const clone = { ...plant };
+
+  // attributes → ["Thân bụi nhỏ", "Lá xanh bóng"]
+  if (Array.isArray(clone.attributes)) {
+    clone.attributes = clone.attributes.map((a: any) =>
+      typeof a === 'object' && a !== null ? a.name : a,
+    );
+  }
+
+  // family → "Caprifoliaceae"
+  if (clone.family && typeof clone.family === 'object') {
+    clone.family = clone.family.name;
+  }
+
+  return clone;
+}
+
 @Injectable()
 export class ContributesService {
   constructor(
@@ -46,19 +67,36 @@ export class ContributesService {
     files: { images?: any[]; newImages?: any[] },
     userId: string,
   ) {
-    const images = files.images
+    /* Ảnh gốc của plant */
+    const uploadedImages = files.images?.length
       ? await this.uploadFiles(files.images, 'contribute')
       : [];
-    const newImages = files.newImages
+
+    /* Ảnh “mới” */
+    const uploadedNewImages = files.newImages?.length
       ? await this.uploadFiles(files.newImages, 'contribute')
       : [];
 
+    /* ảnh newImages do client gửi qua body */
+    const bodyNewImages = dto.newImages ?? [];
+
+    /* payload plant kèm ảnh gốc */
+    const plantPayload = {
+      ...dto.plant,
+      images: [...(dto.plant.images ?? []), ...uploadedImages],
+    };
+
     const contribute = new this.contributeModel({
-      ...dto,
-      images,
-      newImages,
+      type: dto.type,
+      c_message: dto.c_message,
       c_user: userId,
+      data: {
+        plant: plantPayload,
+        // gộp link newImages từ body + từ upload
+        newImages: [...bodyNewImages, ...uploadedNewImages],
+      },
     });
+
     return contribute.save();
   }
 
@@ -67,52 +105,35 @@ export class ContributesService {
       .find()
       .populate('c_user', 'username _id')
       .populate('reviewed_by', 'username _id')
+      // 👉 populate tên attribute
+      .populate({
+        path: 'data.plant.attributes',
+        model: 'Attribute', // Tên model
+        select: 'name _id', // Lấy mỗi name (& _id nếu cần)
+      })
+      // 👉 populate tên family
+      .populate({
+        path: 'data.plant.family',
+        model: 'Family',
+        select: 'name _id',
+      })
       .lean();
 
-    return contributes.map((item) => {
-      let plantData;
-      let newImages;
-
-      // Nếu là dạng mới (có data.contribute_plant)
-      if (item.data?.contribute_plant) {
-        plantData = item.data.contribute_plant;
-        newImages = item.data?.newImages || [];
-      } else {
-        // Nếu là dạng cũ (dữ liệu cây nằm ngoài)
-        // Lấy tất cả field của item, trừ các field contribute
-        // Có thể loại bỏ các trường liên quan đến contribute, chỉ giữ lại info của plant
-        const {
-          _id,
-          c_user,
-          type,
-          status,
-          reviewed_by,
-          review_message,
-          data,
-          __v,
-          createdAt,
-          updatedAt, // Các field contribute
-          ...plant
-        } = item;
-
-        plantData = plant;
-        newImages = [];
-      }
-
-      return {
-        _id: item._id,
-        c_user: item.c_user,
-        c_message: item.c_message,
-        type: item.type,
-        status: item.status,
-        reviewed_by: item.reviewed_by || undefined,
-        review_message: item.review_message || undefined,
-        data: {
-          plant: plantData,
-          newImages,
-        },
-      };
-    });
+    return contributes.map((item) => ({
+      _id: item._id,
+      c_user: item.c_user,
+      c_message: item.c_message,
+      type: item.type,
+      status: item.status,
+      reviewed_by: item.reviewed_by ?? undefined,
+      review_message: item.review_message ?? undefined,
+      data: {
+        plant: normalizePlant(item.data?.plant),
+        newImages: item.data?.newImages ?? [],
+      },
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    }));
   }
 
   async findOne(id: string) {
@@ -120,32 +141,19 @@ export class ContributesService {
       .findById(id)
       .populate('c_user', 'username _id')
       .populate('reviewed_by', 'username _id')
+      .populate({
+        path: 'data.plant.attributes',
+        model: 'Attribute',
+        select: 'name _id',
+      })
+      .populate({
+        path: 'data.plant.family',
+        model: 'Family',
+        select: 'name _id',
+      })
       .lean();
 
     if (!item) return null;
-
-    let plantData;
-    let newImages;
-
-    if (item.data?.contribute_plant) {
-      plantData = item.data.contribute_plant;
-      newImages = item.data?.newImages || [];
-    } else {
-      const {
-        _id,
-        c_user,
-        type,
-        status,
-        reviewed_by,
-        review_message,
-        data,
-        __v,
-        ...plant
-      } = item;
-
-      plantData = plant;
-      newImages = [];
-    }
 
     return {
       _id: item._id,
@@ -153,68 +161,65 @@ export class ContributesService {
       c_message: item.c_message,
       type: item.type,
       status: item.status,
-      reviewed_by: item.reviewed_by || undefined,
-      review_message: item.review_message || undefined,
+      reviewed_by: item.reviewed_by ?? undefined,
+      review_message: item.review_message ?? undefined,
       data: {
-        plant: plantData,
-        newImages,
+        plant: normalizePlant(item.data?.plant),
+        newImages: item.data?.newImages ?? [],
       },
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
     };
   }
 
-async updateStatus(
-  id: string,
-  status: 'pending' | 'approved' | 'rejected',
-  reviewedBy: string,
-  reviewMsg?: string,
-) {
-  const contribute = await this.contributeModel.findById(id);
-  if (!contribute) throw new NotFoundException('Contribute not found');
+  async updateStatus(
+    id: string,
+    status: 'pending' | 'approved' | 'rejected',
+    reviewedBy: string,
+    reviewMsg?: string,
+  ) {
+    const contribute = await this.contributeModel.findById(id);
+    if (!contribute) throw new NotFoundException('Contribute not found');
 
-  if (status === 'approved') {
-    // Lấy plantId (sửa lại đúng field)
-    const plantId =
-      (contribute as any).plant_id ||
-      ((contribute as any).plant && (contribute as any).plant._id) ||
-      ((contribute as any).contribute_plant && (contribute as any).contribute_plant._id);
+    if (status === 'approved') {
+      // lấy thông tin plant trong data
+      const plantData: any = (contribute as any).data?.plant;
+      const plantId = plantData?._id?.toString();
 
-    if (!plantId) throw new NotFoundException('PlantId not found in contribute');
+      if (!plantId) {
+        throw new NotFoundException('PlantId not found in contribute');
+      }
 
-    // Merge images
-    const mergedImages = [
-      ...((contribute as any).images || []),
-      ...((contribute as any).newImages || []),
-    ];
+      // gộp ảnh cũ + ảnh mới
+      const mergedImages = [
+        ...(plantData.images ?? []),
+        ...((contribute as any).data?.newImages ?? []),
+      ];
 
-    // Tạo payload update plant (lấy field nào thực sự có)
-    const updatePlantDto = {
-      ...((contribute as any).contribute_plant || {}),
-      images: mergedImages,
-    };
+      const updatePlantDto: UpdatePlantDto = {
+        ...plantData,
+        images: mergedImages,
+      };
 
-    // Gọi đúng hàm update plant
-    await this.plantsService.update(
-      plantId,
-      updatePlantDto,
-      reviewedBy,
-      (contribute as any).c_user // Người đóng góp
+      await this.plantsService.update(
+        plantId,
+        updatePlantDto,
+        reviewedBy,
+        (contribute as any).c_user, // người đóng góp
+      );
+    }
+
+    // cập nhật trạng thái contribute
+    return this.contributeModel.findByIdAndUpdate(
+      id,
+      {
+        status,
+        reviewed_by: reviewedBy,
+        review_message: reviewMsg,
+      },
+      { new: true },
     );
   }
-
-  // Update lại contribute status
-  return this.contributeModel.findByIdAndUpdate(
-    id,
-    {
-      status,
-      reviewed_by: reviewedBy,
-      review_message: reviewMsg,
-    },
-    { new: true }
-  );
-}
-
 
   async delete(id: string) {
     return this.contributeModel.findByIdAndDelete(id);
