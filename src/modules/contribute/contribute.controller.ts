@@ -33,8 +33,12 @@ export class ContributesController {
     @UploadedFiles() files: { images?: any[]; newImages?: any[] },
     @Request() req,
   ) {
-    const userId = req.user.userId;
-    return this.contributesService.create(dto, files, userId);
+    // const userId = req.user.userId;
+    // return this.contributesService.create(dto, files, userId);
+    return {
+      data: dto,
+      request: req,
+    }
   }
 
   @Get('/list')

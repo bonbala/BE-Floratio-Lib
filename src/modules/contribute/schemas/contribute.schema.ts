@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+// import { Plant } from 'src/modules/plants/schemas/plant.schema';
 
 @Schema({ timestamps: true })
 export class Contribute extends Document {
@@ -24,7 +25,7 @@ export class Contribute extends Document {
   @Prop({ type: Object })
   data: {
     plant: any; // lưu theo format của plant (schema đầy đủ)
-    newImages?: string[];
+    new_images?: string[];
   };
 
   createdAt?: Date;

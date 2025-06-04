@@ -64,7 +64,7 @@ export class ContributesService {
 
   async create(
     dto: CreateContributeDto,
-    files: { images?: any[]; newImages?: any[] },
+    files: { images?: any[]; new_images?: any[] },
     userId: string,
   ) {
     /* Ảnh gốc của plant */
@@ -73,12 +73,12 @@ export class ContributesService {
       : [];
 
     /* Ảnh “mới” */
-    const uploadedNewImages = files.newImages?.length
-      ? await this.uploadFiles(files.newImages, 'contribute')
+    const uploadedNewImages = files.new_images?.length
+      ? await this.uploadFiles(files.new_images, 'contribute')
       : [];
 
     /* ảnh newImages do client gửi qua body */
-    const bodyNewImages = dto.newImages ?? [];
+    const bodyNewImages = dto.new_images ?? [];
 
     /* payload plant kèm ảnh gốc */
     const plantPayload = {
@@ -93,7 +93,7 @@ export class ContributesService {
       data: {
         plant: plantPayload,
         // gộp link newImages từ body + từ upload
-        newImages: [...bodyNewImages, ...uploadedNewImages],
+        new_images: [...bodyNewImages, ...uploadedNewImages],
       },
     });
 
@@ -129,7 +129,7 @@ export class ContributesService {
       review_message: item.review_message ?? undefined,
       data: {
         plant: normalizePlant(item.data?.plant),
-        newImages: item.data?.newImages ?? [],
+        new_images: item.data?.new_images ?? [],
       },
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
@@ -165,7 +165,7 @@ export class ContributesService {
       review_message: item.review_message ?? undefined,
       data: {
         plant: normalizePlant(item.data?.plant),
-        newImages: item.data?.newImages ?? [],
+        new_images: item.data?.new_images ?? [],
       },
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
