@@ -88,5 +88,28 @@ export class CreatePlantDto {
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => SpeciesDescriptionDto)
+  @ApiProperty({
+    example: [
+      {
+        section: 'Biogeography',
+        detail: [
+          {
+            label: 'Native Distribution',
+            content: 'Mexico, Guatemala, Cuba',
+          },
+        ],
+      },
+      {
+        section: 'Classifications and Characteristics',
+        detail: [
+          {
+            label: 'Plant Division',
+            content: 'Angiosperms (Flowering Seed Plants) (Dicotyledon)',
+          },
+        ],
+      },
+    ],
+    description: 'Species Description',
+  })
   species_description?: SpeciesDescriptionDto[];
 }

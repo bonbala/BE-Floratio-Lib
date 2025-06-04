@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ParseJsonPipe } from './common/pipe/parse-json.pipe';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,6 +19,7 @@ async function bootstrap() {
     preflightContinue: false, // Nest sẽ tự handle OPTIONS
   });
   app.useGlobalPipes(
+    new ParseJsonPipe(),
     new ValidationPipe({
       transform: true,
       whitelist: true,

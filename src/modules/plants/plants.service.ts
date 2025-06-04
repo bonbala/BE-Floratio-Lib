@@ -12,12 +12,13 @@ import { Attribute } from './schemas/attribute.schema';
 import { CreatePlantDto } from './dto/create-plant.dto';
 import { UpdatePlantDto } from './dto/update-plant.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { File } from 'multer';
+// import { File } from 'multer';
 import { CreateFamilyDto } from './dto/create-family.dto';
 import { UpdateFamilyDto } from './dto/update-family.dto';
 import { PlantListQueryDto } from './dto/plant-list-query.dto';
 import { PlantStatsResponseDto } from './dto/plant-stats.dto';
 import { HistoryService } from '../history/history.service';
+// import { Express } from 'express';
 
 @Injectable()
 export class PlantsService {
@@ -29,7 +30,10 @@ export class PlantsService {
     private readonly historyService: HistoryService,
   ) {}
 
-  async create(dto: CreatePlantDto, files?: File[]): Promise<Plant> {
+  async create(
+    dto: CreatePlantDto,
+    files?: Express.Multer.File[],
+  ): Promise<Plant> {
     let familyDoc = await this.famModel.findOne({ name: dto.family_name });
     if (!familyDoc)
       familyDoc = await this.famModel.create({ name: dto.family_name });
@@ -45,7 +49,10 @@ export class PlantsService {
     const imageUrls: string[] = [];
     if (files && files.length) {
       for (const file of files) {
-        const url: string = await this.cloudinary.uploadImage(file);
+        const url: string = await this.cloudinary.uploadImage(
+          file.buffer,
+          'plants',
+        );
         imageUrls.push(url);
       }
     }
@@ -184,12 +191,16 @@ export class PlantsService {
     dto: UpdatePlantDto,
     userId: string,
     contributeBy?: string, // <-- Thêm tham số này (tùy chọn)
+    newImages?: Express.Multer.File[],
   ): Promise<Plant> {
     // Lấy bản ghi trước khi thay đổi
     const plant = await this.plantModel.findById(id);
     if (!plant) throw new NotFoundException('Plant not found');
 
     const beforeSnapshot = plant.toObject();
+
+    // Áp dụng các field còn lại
+    Object.assign(plant, dto);
 
     // Xử lý family_name nếu có
     if (dto.family_name) {
@@ -210,8 +221,16 @@ export class PlantsService {
       plant.attributes = docs.map((d) => d._id as Types.ObjectId);
     }
 
-    // Áp dụng các field còn lại
-    Object.assign(plant, dto);
+    /* 4. upload ảnh mới (nếu có) */
+    if (newImages && newImages.length) {
+      const uploadedUrls: string[] = [];
+      for (const file of newImages) {
+        const url = await this.cloudinary.uploadImage(file.buffer, 'plants');
+        uploadedUrls.push(url);
+      }
+      // nối thêm ảnh mới vào mảng images hiện tại
+      plant.images.push(...uploadedUrls);
+    }
 
     const updated = await plant.save();
 

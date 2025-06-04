@@ -50,7 +50,7 @@ export class CreateContributeDto {
     }
     return value;
   })
-  @Type(() => ContributePlantDto)  // ⇐ đặt TRƯỚC
+  @Type(() => ContributePlantDto) // ⇐ đặt TRƯỚC
   @ValidateNested()
   plant: ContributePlantDto;
 

@@ -10,6 +10,7 @@ import { PlantsModule } from './modules/plants/plants.module';
 import { MarksModule } from './modules/marks/marks.module';
 import { ContributeModule } from './modules/contribute/contribute.module';
 import { HistoryModule } from './modules/history/history.module';
+import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { HistoryModule } from './modules/history/history.module';
     MarksModule,
     ContributeModule,
     HistoryModule,
+    CloudinaryModule,
   ],
   controllers: [],
   providers: [],

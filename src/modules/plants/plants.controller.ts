@@ -13,6 +13,7 @@ import {
   HttpStatus,
   Query,
   Request,
+  UsePipes,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -23,20 +24,25 @@ import {
 } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { PlantsService } from './plants.service';
-import { CreatePlantDto } from './dto/create-plant.dto';
-import { UpdatePlantDto } from './dto/update-plant.dto';
-import { PlantResponseDto } from './dto/plant-response.dto';
-import { File } from 'multer';
+import {
+  CreatePlantDto,
+  UpdatePlantDto,
+  PlantResponseDto,
+  CreateFamilyDto,
+  UpdateFamilyDto,
+  PlantListQueryDto,
+  PlantStatsResponseDto,
+} from './dto/index';
+// import { File } from 'multer';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { CreateFamilyDto } from './dto/create-family.dto';
 import { Family } from './schemas/family.schema';
-import { UpdateFamilyDto } from './dto/update-family.dto';
-// import { PaginationQueryDto } from './dto/pagination-query.dto';
-import { PlantListQueryDto } from './dto/plant-list-query.dto';
-import { PlantsPaginationDoc } from './docs/pagination.doc';
-import { PlantStatsResponseDto } from './dto/plant-stats.dto';
+import {
+  SwaggerCreatePlant,
+  PlantsPaginationDoc,
+  SwaggerUpdatePlant,
+} from './docs';
 
 @Controller('plants')
 export class PlantsController {
@@ -45,33 +51,12 @@ export class PlantsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('super-admin', 'admin')
   @Post('create')
-  @ApiOperation({ summary: 'Create a new plant entry' })
-  @ApiBody({
-    description: 'Data needed to create a plant',
-    type: CreatePlantDto,
-    examples: {
-      example1: {
-        summary: 'Sample create payload',
-        value: {
-          scientific_name: 'Abelia × grandiflora',
-          common_name: ['Glossy abelia'],
-          family_name: 'Caprifoliaceae',
-          attributes: ['Full Sun', 'Moderate Water'],
-          images: [
-            'https://example.com/image1.jpg',
-            'https://example.com/image2.jpg',
-          ],
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Plant created successfully',
-    type: CreatePlantDto,
-  })
+  @SwaggerCreatePlant()
   @UseInterceptors(FilesInterceptor('images', 5))
-  create(@Body() dto: CreatePlantDto, @UploadedFiles() files: File[]) {
+  create(
+    @Body() dto: CreatePlantDto,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
     return this.plantsService.create(dto, files);
   }
 
@@ -110,36 +95,45 @@ export class PlantsController {
   @Roles('super-admin', 'admin')
   @Patch('update/:id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Update an existing plant' })
-  @ApiParam({ name: 'id', description: 'Unique identifier of the plant' })
-  @ApiBody({
-    type: UpdatePlantDto,
-    examples: {
-      example1: {
-        summary: 'Sample update payload',
-        value: {
-          common_name: ['Glossy abelia', '大花六道木'],
-          attributes: [
-            'Full Sun',
-            'Moderate Water',
-            'Butterfly-Attracting Plant',
-          ],
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Plant updated successfully',
-    type: PlantResponseDto,
-  })
-  @ApiResponse({ status: 404, description: 'Plant not found' })
+  @SwaggerUpdatePlant()
+  // @ApiOperation({ summary: 'Update an existing plant' })
+  // @ApiParam({ name: 'id', description: 'Unique identifier of the plant' })
+  // @ApiBody({
+  //   type: UpdatePlantDto,
+  //   examples: {
+  //     example1: {
+  //       summary: 'Sample update payload',
+  //       value: {
+  //         common_name: ['Glossy abelia', '大花六道木'],
+  //         attributes: [
+  //           'Full Sun',
+  //           'Moderate Water',
+  //           'Butterfly-Attracting Plant',
+  //         ],
+  //       },
+  //     },
+  //   },
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Plant updated successfully',
+  //   type: PlantResponseDto,
+  // })
+  // @ApiResponse({ status: 404, description: 'Plant not found' })
+  @UseInterceptors(FilesInterceptor('new-images', 5))
   async update(
     @Request() req: any,
     @Param('id') id: string,
     @Body() dto: UpdatePlantDto,
+    @UploadedFiles() newImages: Express.Multer.File[],
   ) {
-    const updated = await this.plantsService.update(id, dto, req.user.userId);
+    const updated = await this.plantsService.update(
+      id,
+      dto,
+      req.user.userId,
+      undefined, //tham số cho contributeBy (giữ nguyên tuỳ chọn)
+      newImages,
+    );
     return {
       message: 'Plant updated successfully',
       data: updated,
