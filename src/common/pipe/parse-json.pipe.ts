@@ -9,6 +9,8 @@ export class ParseJsonPipe implements PipeTransform {
       'common_name',
       'attributes',
       'images',
+      'plant',
+      'data',
     ],
   ) {}
 

@@ -15,30 +15,37 @@ import { ContributesService } from './contribute.service';
 import { CreateContributeDto } from './dto/create-contribute.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { UpdateContributeDto } from './dto/update-contribute.dto';
+
+type UploadedFilesType = {
+  images?: Express.Multer.File[];
+  new_images?: Express.Multer.File[]; // field-name phải trùng form-data
+};
 
 @UseGuards(JwtAuthGuard)
 @Controller('contributes')
 export class ContributesController {
   constructor(private readonly contributesService: ContributesService) {}
 
-  @Post('create')
+  @Post('/create')
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'images', maxCount: 10 },
-      { name: 'newImages', maxCount: 10 },
-    ]),
+    FileFieldsInterceptor(
+      [
+        { name: 'images', maxCount: 10 },
+        { name: 'new_images', maxCount: 10 },
+      ],
+      {
+        limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB/ảnh tuỳ chỉnh
+      },
+    ),
   )
-  async create(
+  create(
     @Body() dto: CreateContributeDto,
-    @UploadedFiles() files: { images?: any[]; newImages?: any[] },
-    @Request() req,
+    @UploadedFiles() files: UploadedFilesType,
+    @Request() req: any,
   ) {
-    // const userId = req.user.userId;
-    // return this.contributesService.create(dto, files, userId);
-    return {
-      data: dto,
-      request: req,
-    };
+    const userId: string = req.user.userId; // lấy từ JWT
+    return this.contributesService.create(dto, files, userId);
   }
 
   @Get('/list')
@@ -51,7 +58,7 @@ export class ContributesController {
     return this.contributesService.findOne(id);
   }
 
-  @Patch('update/:id')
+  @Patch(':id')
   updateStatus(
     @Param('id') id: string,
     @Body()
@@ -66,6 +73,40 @@ export class ContributesController {
       body.status,
       body.reviewedBy,
       body.reviewMsg,
+    );
+  }
+
+  @Patch('update/:id')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'images', maxCount: 10 },
+        { name: 'new_images', maxCount: 10 },
+      ],
+      { limits: { fileSize: 5 * 1024 * 1024 } },
+    ),
+  )
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateContributeDto,
+    @UploadedFiles() files: UploadedFilesType,
+    @Request() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.contributesService.update(id, dto, files, req.user.userId);
+  }
+
+  @Patch('moderate/:id') // assume admin
+  moderate(
+    @Param('id') id: string,
+    @Body() body: { action: 'approve' | 'reject'; message: string },
+    @Request() req: any,
+  ) {
+    return this.contributesService.moderate(
+      id,
+      body.action,
+      body.message,
+      req.user._id,
     );
   }
 
