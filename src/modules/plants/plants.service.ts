@@ -93,10 +93,16 @@ export class PlantsService {
       image: string | null; // chỉ image đầu tiên
       common_name: string[];
       attributes: string[];
+      createdAt: string; // ISO-8601 string
+      updatedAt: string; // ISO-8601 string
     }>
   > {
+    // Chỉ lấy các trường cần thiết để giảm payload
     const plants = await this.plantModel
       .find()
+      .select(
+        'scientific_name family_name images common_name attributes createdAt updatedAt',
+      )
       .populate('family_name', 'name')
       .populate('attributes', 'name')
       .lean();
@@ -104,13 +110,15 @@ export class PlantsService {
     return plants.map((p) => ({
       _id: (p._id as Types.ObjectId).toString(),
       scientific_name: p.scientific_name,
-      family_name: (p.family_name as any)?.name,
+      family_name: (p.family_name as any)?.name ?? '',
       image:
         Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null,
       common_name: p.common_name,
       attributes: Array.isArray((p as any).attributes)
         ? (p as any).attributes.map((a: any) => a.name)
         : [],
+      createdAt: (p.createdAt as Date).toISOString(),
+      updatedAt: (p.updatedAt as Date).toISOString(),
     }));
   }
 

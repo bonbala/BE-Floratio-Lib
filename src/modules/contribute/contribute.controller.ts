@@ -38,7 +38,7 @@ export class ContributesController {
     return {
       data: dto,
       request: req,
-    }
+    };
   }
 
   @Get('/list')

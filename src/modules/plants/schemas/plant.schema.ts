@@ -30,6 +30,12 @@ export class Plant extends Document {
 
   @Prop({ type: [SpeciesDescriptionSchema], default: [] })
   species_description: SpeciesDescription[];
+
+  @Prop()
+  createdAt?: Date;
+
+  @Prop()
+  updatedAt?: Date;
 }
 
 export const PlantSchema = SchemaFactory.createForClass(Plant);
