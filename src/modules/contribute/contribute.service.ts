@@ -328,14 +328,15 @@ export class ContributesService {
     }
 
     /* ----- Xử lý approve ----- */
+    let plantId: Types.ObjectId;
+
     if (contrib.type === 'create') {
       // 1. map DTO & resolve family/attributes name (ObjectId -> name nếu cần)
-      const dto = mapToCreatePlantDto(
-        await this.resolveNames(contrib.data.plant),
-      );
+      const dto = mapToCreatePlantDto(contrib.data.plant);
 
       // 2. Tạo plant mới
       const plant = await this.plantsService.create(dto);
+      plantId = plant._id as Types.ObjectId;
 
       // 3. Cập nhật contribute
       contrib.status = 'approved';
@@ -346,9 +347,7 @@ export class ContributesService {
         throw new BadRequestException('Thiếu plant_ref');
 
       // 1. map DTO
-      const dto = mapToUpdatePlantDto(
-        await this.resolveNames(contrib.data.plant),
-      );
+      const dto = mapToUpdatePlantDto(contrib.data.plant);
 
       // 2. truyền new_images (array URL) sang PlantService.update
       await this.plantsService.update(
@@ -360,10 +359,11 @@ export class ContributesService {
       );
 
       contrib.status = 'approved';
+      plantId = contrib.data.plant_ref;
     }
 
     await contrib.save();
-    return { status: 'approved' };
+    return { status: 'approved', plant_id: plantId.toString() };
   }
 
   /** chuyển ObjectId -> name (nếu contribute lưu id) để khớp PlantService hiện tại */
@@ -394,5 +394,10 @@ export class ContributesService {
 
   async delete(id: string) {
     return this.contributeModel.findByIdAndDelete(id);
+  }
+
+  async findById(id: string) {
+    const contrib = await this.contributeModel.findById(id);
+    return contrib;
   }
 }

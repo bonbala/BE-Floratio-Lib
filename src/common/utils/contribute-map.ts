@@ -1,5 +1,4 @@
 // utils/contribute-map.ts
-import { Types } from 'mongoose';
 import { CreatePlantDto } from 'src/modules/plants/dto/create-plant.dto';
 import { UpdatePlantDto } from 'src/modules/plants/dto/update-plant.dto';
 
@@ -9,7 +8,7 @@ export function mapToCreatePlantDto(raw: any): CreatePlantDto {
     scientific_name: raw.scientific_name,
     common_name: raw.common_name ?? [],
     description: raw.description,
-    family: raw.family, // sẽ là name (phía dưới ta resolve)
+    family: raw.family,
     attributes: raw.attributes ?? [],
     images: raw.images ?? [],
     species_description: raw.species_description ?? [],
@@ -22,7 +21,7 @@ export function mapToUpdatePlantDto(raw: any): UpdatePlantDto {
   if (raw.scientific_name) dto.scientific_name = raw.scientific_name;
   if (raw.common_name) dto.common_name = raw.common_name;
   if (raw.description) dto.description = raw.description;
-  if (raw.family) dto.family_name = raw.family;
+  if (raw.family) dto.family = raw.family;
   if (raw.attributes) dto.attributes = raw.attributes;
   if (raw.images) dto.images = raw.images;
   if (raw.species_description)

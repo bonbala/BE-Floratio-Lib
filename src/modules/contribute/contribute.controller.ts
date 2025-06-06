@@ -96,7 +96,7 @@ export class ContributesController {
   }
 
   @Patch('moderate/:id') // assume admin
-  moderate(
+  async moderate(
     @Param('id') id: string,
     @Body() body: { action: 'approve' | 'reject'; message: string },
     @Request() req: any,
@@ -107,6 +107,13 @@ export class ContributesController {
       body.message,
       req.user._id,
     );
+    // const contrib = await this.contributesService.findById(id);
+    // const userId = req.user.userId;
+    // return {
+    //   contrib,
+    //   body,
+    //   userId,
+    // };
   }
 
   @Delete('delete/:id')
