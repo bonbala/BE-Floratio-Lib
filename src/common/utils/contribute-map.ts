@@ -9,7 +9,7 @@ export function mapToCreatePlantDto(raw: any): CreatePlantDto {
     scientific_name: raw.scientific_name,
     common_name: raw.common_name ?? [],
     description: raw.description,
-    family_name: raw.family, // sẽ là name (phía dưới ta resolve)
+    family: raw.family, // sẽ là name (phía dưới ta resolve)
     attributes: raw.attributes ?? [],
     images: raw.images ?? [],
     species_description: raw.species_description ?? [],

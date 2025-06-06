@@ -92,7 +92,6 @@ export class ContributesController {
     @UploadedFiles() files: UploadedFilesType,
     @Request() req: any,
   ) {
-    const userId = req.user.userId;
     return this.contributesService.update(id, dto, files, req.user.userId);
   }
 

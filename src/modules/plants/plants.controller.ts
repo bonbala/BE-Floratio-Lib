@@ -58,6 +58,10 @@ export class PlantsController {
     @UploadedFiles() files: Express.Multer.File[],
   ) {
     return this.plantsService.create(dto, files);
+    // return {
+    //   dto,
+    //   files,
+    // };
   }
 
   @Get('list')
@@ -86,7 +90,7 @@ export class PlantsController {
 
   @Get('pagination')
   @PlantsPaginationDoc()
-  async listPaginated(@Query() query: PlantListQueryDto) {
+  async listPaginated(@Query() query) {
     console.log('💬 queryDto.attributes =', query.attributes);
     return this.plantsService.findFiltered(query);
   }
@@ -96,30 +100,6 @@ export class PlantsController {
   @Patch('update/:id')
   @HttpCode(HttpStatus.OK)
   @SwaggerUpdatePlant()
-  // @ApiOperation({ summary: 'Update an existing plant' })
-  // @ApiParam({ name: 'id', description: 'Unique identifier of the plant' })
-  // @ApiBody({
-  //   type: UpdatePlantDto,
-  //   examples: {
-  //     example1: {
-  //       summary: 'Sample update payload',
-  //       value: {
-  //         common_name: ['Glossy abelia', '大花六道木'],
-  //         attributes: [
-  //           'Full Sun',
-  //           'Moderate Water',
-  //           'Butterfly-Attracting Plant',
-  //         ],
-  //       },
-  //     },
-  //   },
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Plant updated successfully',
-  //   type: PlantResponseDto,
-  // })
-  // @ApiResponse({ status: 404, description: 'Plant not found' })
   @UseInterceptors(FilesInterceptor('new-images', 5))
   async update(
     @Request() req: any,
