@@ -20,7 +20,7 @@ export class Plant extends Document {
   description: string;
 
   @Prop({ type: Types.ObjectId, ref: Family.name, required: true })
-  family_name: Types.ObjectId;
+  family: Types.ObjectId;
 
   @Prop({ type: [Types.ObjectId], ref: Attribute.name })
   attributes: Types.ObjectId[];
