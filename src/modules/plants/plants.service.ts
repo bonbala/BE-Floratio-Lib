@@ -178,16 +178,35 @@ export class PlantsService {
   async findOne(id: string): Promise<any> {
     const p = await this.plantModel
       .findById(id)
-      .populate('family', 'name')
-      .populate('attributes', 'name')
+      .populate('family', 'name') // _id luôn có sẵn
+      .populate('attributes', 'name') // _id luôn có sẵn
       .lean();
+
     if (!p) throw new NotFoundException('Plant not found');
 
     return {
+      /** _id của cây */
+      _id: p._id.toString(),
+
       scientific_name: p.scientific_name,
       common_name: p.common_name,
-      family: (p.family as any)?.name,
-      attributes: (p.attributes as any[]).map((a) => a.name),
+
+      /** family: {_id, name} hoặc null */
+      family: p.family
+        ? {
+            _id: (p.family as any)._id.toString(),
+            name: (p.family as any).name,
+          }
+        : null,
+
+      /** attributes: [{_id, name}, …] */
+      attributes: Array.isArray(p.attributes)
+        ? (p.attributes as any[]).map((a) => ({
+            _id: a._id.toString(),
+            name: a.name,
+          }))
+        : [],
+
       images: p.images,
       species_description: p.species_description,
     };
