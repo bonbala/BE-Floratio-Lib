@@ -1,5 +1,5 @@
 // src/modules/plants/plants.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PlantsService } from './plants.service';
 import { PlantsController } from './plants.controller';
@@ -17,7 +17,7 @@ import { HistoryModule } from '../history/history.module';
       { name: Attribute.name, schema: AttributeSchema },
     ]),
     CloudinaryModule,
-    HistoryModule,
+    forwardRef(() => HistoryModule),
   ],
   providers: [PlantsService],
   controllers: [PlantsController],
