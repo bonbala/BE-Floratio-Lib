@@ -61,4 +61,18 @@ export class HistoryController {
   remove(@Param('id') id: string) {
     return this.historyService.remove(id);
   }
+  @Patch('rollback/:id')
+  rollbackOne(@Param('id') id: string) {
+    return this.historyService.rollbackOne(id);
+  }
+
+  @Patch('bulk-rollback')
+  bulkRollback(@Body('ids') ids: string[]) {
+    return this.historyService.rollbackMany(ids);
+  }
+
+  @Get('plant/list/:plantId')
+  async getByPlant(@Param('plantId') plantId: string) {
+    return this.historyService.findByPlantId(plantId);
+  }
 }

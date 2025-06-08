@@ -1,8 +1,10 @@
 // src/plants/plants.service.ts
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, FilterQuery } from 'mongoose';
@@ -28,6 +30,7 @@ export class PlantsService {
     @InjectModel(Family.name) private famModel: Model<Family>,
     @InjectModel(Attribute.name) private attrModel: Model<Attribute>,
     private readonly cloudinary: CloudinaryService,
+    @Inject(forwardRef(() => HistoryService))
     private readonly historyService: HistoryService,
   ) {}
 

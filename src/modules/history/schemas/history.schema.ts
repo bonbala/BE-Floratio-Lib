@@ -12,8 +12,8 @@ export class History {
   plant: Types.ObjectId;
 
   /** Hành động: update | delete */
-  @Prop({ enum: ['update', 'delete'], required: true })
-  action: 'update' | 'delete';
+  @Prop({ enum: ['update', 'delete', 'rollback'], required: true })
+  action: 'update' | 'delete' | 'rollback';
 
   /** Snapshot đầy đủ trước khi thay đổi */
   @Prop({ type: Object, required: true })
