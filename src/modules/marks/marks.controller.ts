@@ -40,15 +40,15 @@ export class MarksController {
     type: CreateMarkDto,
   })
   async create(@Request() req: any, @Body() dto: CreateMarkDto) {
-    return this.marksService.create(req.user.userId, dto.plant);
+    return this.marksService.create(req.user.userId, dto.plantId);
   }
 
-  @Get('user/:userId')
+  @Get('list/user')
   @ApiOperation({ summary: 'Retrieve all marks for a given user' })
   @ApiParam({ name: 'userId', description: 'User identifier' })
   @ApiResponse({ status: 200, description: 'List of user marks' })
-  findByUser(@Param('userId') userId: string) {
-    return this.marksService.findByUser(userId);
+  findByUser(@Request() req: any) {
+    return this.marksService.findByUser(req.user.userId);
   }
 
   @Get('list')

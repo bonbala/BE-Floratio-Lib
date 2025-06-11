@@ -6,6 +6,32 @@ import { Mark } from './schemas/mark.schema';
 import { UpdateMarkDto } from './dto/update-mark.dto';
 import { Plant } from '../plants/schemas/plant.schema';
 
+/** ---- Interface “lean” sau populate ---- */
+interface LeanPlant {
+  _id: Types.ObjectId;
+  scientific_name: string;
+  common_name: string[];
+  images: string[];
+  attributes: string[];
+}
+interface LeanMark {
+  _id: Types.ObjectId;
+  user: Types.ObjectId;
+  plant: LeanPlant;
+}
+/** ---- Kiểu dữ liệu trả về gọn ---- */
+type CompactPlant = {
+  _id: string;
+  scientific_name: string;
+  common_name: string[];
+  image: string | null;
+  attributes: string[];
+};
+type MarkCompact = {
+  _id: string;
+  plant: CompactPlant;
+};
+
 @Injectable()
 export class MarksService {
   constructor(
@@ -38,19 +64,36 @@ export class MarksService {
     return mark;
   }
 
-  async findByUser(userId: string): Promise<Mark[]> {
+  async findByUser(userId: string): Promise<MarkCompact[]> {
     const _userId = new Types.ObjectId(userId);
-    return this.markModel.find({ user: _userId }).populate('plant').exec();
+    const marks = await this.markModel
+      .find({ user: _userId })
+      .populate('plant', '_id scientific_name common_name images attributes')
+      .lean<LeanMark[]>()
+      .exec();
+
+    return marks.map(
+      (m): MarkCompact => ({
+        _id: m._id.toString(),
+        plant: {
+          _id: m.plant._id.toString(),
+          scientific_name: m.plant.scientific_name,
+          common_name: m.plant.common_name,
+          image: m.plant.images?.[0] ?? null,
+          attributes: m.plant.attributes,
+        },
+      }),
+    );
   }
 
   async update(id: string, dto: UpdateMarkDto): Promise<Mark> {
     const mark = await this.markModel.findById(id).exec();
     if (!mark) throw new NotFoundException('Mark not found');
 
-    if (dto.plant) {
-      const plant = await this.plantModel.findById(dto.plant).exec();
+    if (dto.plantId) {
+      const plant = await this.plantModel.findById(dto.plantId).exec();
       if (!plant) throw new NotFoundException('Plant not found');
-      mark.plant = new Types.ObjectId(dto.plant);
+      mark.plant = new Types.ObjectId(dto.plantId);
     }
 
     return mark.save();
