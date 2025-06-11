@@ -47,10 +47,10 @@ export class MarksService {
     const mark = await this.markModel.findById(id).exec();
     if (!mark) throw new NotFoundException('Mark not found');
 
-    if (dto.plant) {
-      const plant = await this.plantModel.findById(dto.plant).exec();
+    if (dto.plantId) {
+      const plant = await this.plantModel.findById(dto.plantId).exec();
       if (!plant) throw new NotFoundException('Plant not found');
-      mark.plant = new Types.ObjectId(dto.plant);
+      mark.plant = new Types.ObjectId(dto.plantId);
     }
 
     return mark.save();
