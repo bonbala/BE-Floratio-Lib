@@ -68,7 +68,10 @@ export class MarksService {
     const _userId = new Types.ObjectId(userId);
     const marks = await this.markModel
       .find({ user: _userId })
-      .populate('plant', '_id scientific_name common_name images attributes')
+      .populate({
+        path: 'plant',
+        select: 'scientific_name common_name images attributes', // chọn field cần
+      })
       .lean<LeanMark[]>()
       .exec();
 
