@@ -237,13 +237,13 @@ export class ContributesService {
     userId: string,
   ) {
     /* 0. Parse JSON nếu client gửi data dưới dạng chuỗi */
-    if (typeof dto.data === 'string') {
-      try {
-        dto.data = JSON.parse(dto.data);
-      } catch {
-        throw new BadRequestException('data phải là JSON hợp lệ');
-      }
-    }
+    // if (typeof dto.data === 'string') {
+    //   try {
+    //     dto.data = JSON.parse(dto.data);
+    //   } catch {
+    //     throw new BadRequestException('data phải là JSON hợp lệ');
+    //   }
+    // }
 
     const contribute = await this.contributeModel.findById(id);
     if (!contribute) throw new NotFoundException('Not found');
@@ -392,8 +392,11 @@ export class ContributesService {
     return clone;
   }
 
-  async delete(id: string) {
-    return this.contributeModel.findByIdAndDelete(id);
+  delete(id: string) {
+    this.contributeModel.findByIdAndDelete(id);
+    return {
+      message: 'Delete Contribute Success',
+    };
   }
 
   async findById(id: string) {

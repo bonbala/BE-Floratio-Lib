@@ -7,13 +7,21 @@ import { UpdateMarkDto } from './dto/update-mark.dto';
 import { Plant } from '../plants/schemas/plant.schema';
 
 /** ---- Interface “lean” sau populate ---- */
-interface LeanPlant {
+export interface LeanFamily {
+  _id: Types.ObjectId;
+  name: string;
+}
+
+export interface LeanPlant {
   _id: Types.ObjectId;
   scientific_name: string;
   common_name: string[];
-  images: string[];
-  attributes: string[];
+  images?: string[];
+  attributes: Types.ObjectId[] | { _id: Types.ObjectId; name: string }[];
+  // ✳️ thêm dòng dưới
+  family?: Types.ObjectId | LeanFamily; // sau populate sẽ là LeanFamily
 }
+
 interface LeanMark {
   _id: Types.ObjectId;
   user: Types.ObjectId;
@@ -25,7 +33,8 @@ type CompactPlant = {
   scientific_name: string;
   common_name: string[];
   image: string | null;
-  attributes: string[];
+  family: { _id: string; name: string } | null;
+  attributes: { _id: string; name: string }[];
 };
 type MarkCompact = {
   _id: string;
@@ -65,13 +74,17 @@ export class MarksService {
   }
 
   async findByUser(userId: string): Promise<MarkCompact[]> {
-    const _userId = new Types.ObjectId(userId);
     const marks = await this.markModel
-      .find({ user: _userId })
+      .find({ user: new Types.ObjectId(userId) })
       .populate({
         path: 'plant',
-        select: 'scientific_name common_name images attributes', // chọn field cần
+        select: 'scientific_name common_name images attributes family',
+        populate: [
+          { path: 'attributes', select: 'name' },
+          { path: 'family', select: 'name' },
+        ],
       })
+      // ⬇️ chỉ định đúng kiểu LeanMark (đã có family)
       .lean<LeanMark[]>()
       .exec();
 
@@ -83,7 +96,17 @@ export class MarksService {
           scientific_name: m.plant.scientific_name,
           common_name: m.plant.common_name,
           image: m.plant.images?.[0] ?? null,
-          attributes: m.plant.attributes,
+          family:
+            m.plant.family && (m.plant.family as any).name
+              ? {
+                  _id: (m.plant.family as any)._id.toString(),
+                  name: (m.plant.family as any).name,
+                }
+              : null,
+          attributes: (m.plant.attributes as any[]).map((a) => ({
+            _id: a._id.toString(),
+            name: a.name,
+          })),
         },
       }),
     );
