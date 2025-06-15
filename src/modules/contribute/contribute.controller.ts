@@ -58,24 +58,6 @@ export class ContributesController {
     return this.contributesService.findOne(id);
   }
 
-  @Patch(':id')
-  updateStatus(
-    @Param('id') id: string,
-    @Body()
-    body: {
-      status: 'pending' | 'approved' | 'rejected';
-      reviewedBy: string;
-      reviewMsg?: string;
-    },
-  ) {
-    return this.contributesService.updateStatus(
-      id,
-      body.status,
-      body.reviewedBy,
-      body.reviewMsg,
-    );
-  }
-
   @Patch('update/:id')
   @UseInterceptors(
     FileFieldsInterceptor(
