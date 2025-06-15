@@ -19,6 +19,7 @@ import {
 } from 'src/common/utils/contribute-map';
 import { Family } from '../plants/schemas/family.schema';
 import { Attribute } from '../plants/schemas/attribute.schema';
+import { Plant } from '../plants/schemas/plant.schema';
 
 type UploadedFilesType = {
   images?: Express.Multer.File[];
@@ -155,13 +156,13 @@ export class ContributesService {
         path: 'data.plant.attributes',
         model: 'Attribute',
         select: 'name',
-        transform: (doc: any) => doc?.name,
+        // transform: (doc: any) => doc?.name,
       })
       .populate({
         path: 'data.plant.family',
         model: 'Family',
         select: 'name',
-        transform: (doc: any) => doc?.name,
+        // transform: (doc: any) => doc?.name,
       })
       .lean();
 
