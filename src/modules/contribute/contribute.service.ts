@@ -20,6 +20,7 @@ import {
 import { Family } from '../plants/schemas/family.schema';
 import { Attribute } from '../plants/schemas/attribute.schema';
 import { Plant } from '../plants/schemas/plant.schema';
+import { ContributeListQueryDto } from './dto/contribute-list-query.dto';
 
 type UploadedFilesType = {
   images?: Express.Multer.File[];

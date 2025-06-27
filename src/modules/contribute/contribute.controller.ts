@@ -10,12 +10,14 @@ import {
   UseInterceptors,
   UploadedFiles,
   Request,
+  Query,
 } from '@nestjs/common';
 import { ContributesService } from './contribute.service';
 import { CreateContributeDto } from './dto/create-contribute.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { UpdateContributeDto } from './dto/update-contribute.dto';
+import { ContributeListQueryDto } from './dto/contribute-list-query.dto';
 
 type UploadedFilesType = {
   images?: Express.Multer.File[];

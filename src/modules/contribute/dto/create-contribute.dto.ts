@@ -4,7 +4,6 @@ import {
   IsOptional,
   IsString,
   IsArray,
-  ArrayNotEmpty,
   ArrayUnique,
   ValidateIf,
   ValidateNested,

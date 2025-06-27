@@ -10,6 +10,9 @@ export class User extends Document {
 
   @Prop({ type: Types.ObjectId, ref: Role.name })
   role: Types.ObjectId;
+
+  @Prop({ default: false })
+  is_email_verified: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
