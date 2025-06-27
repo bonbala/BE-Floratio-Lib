@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User } from './schemas/user.schema';
-import { UpdateUserDto } from './dto/update-user.dto';
+// import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -89,5 +89,17 @@ export class UsersService {
       throw new NotFoundException(`User với id ${id} không tìm thấy`);
     }
     return deleted;
+  }
+
+  async markEmailVerified(userId: string) {
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      { is_email_verified: true },
+      { new: true },
+    );
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
   }
 }

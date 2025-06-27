@@ -11,6 +11,7 @@ import { MarksModule } from './modules/marks/marks.module';
 import { ContributeModule } from './modules/contribute/contribute.module';
 import { HistoryModule } from './modules/history/history.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
     ContributeModule,
     HistoryModule,
     CloudinaryModule,
+    MailModule,
   ],
   controllers: [],
   providers: [],
