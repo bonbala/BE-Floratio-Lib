@@ -13,6 +13,9 @@ export class User extends Document {
 
   @Prop({ default: false })
   is_email_verified: boolean;
+
+  @Prop({ default: false })
+  is_banned: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

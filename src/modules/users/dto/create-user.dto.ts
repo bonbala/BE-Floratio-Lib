@@ -1,5 +1,5 @@
 // src/users/dto/create-user.dto.ts
-import { IsString, IsEmail, MinLength } from 'class-validator';
+import { IsString, IsEmail, MinLength, IsBoolean } from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
@@ -14,4 +14,7 @@ export class CreateUserDto {
 
   @IsString({ message: 'roleName không được để trống' })
   roleName: string;
+
+  @IsBoolean()
+  is_banned: false;
 }
