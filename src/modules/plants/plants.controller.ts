@@ -32,6 +32,7 @@ import {
   UpdateFamilyDto,
   PlantListQueryDto,
   PlantStatsResponseDto,
+  FindPlantsByNamesDto,
 } from './dto/index';
 // import { File } from 'multer';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
@@ -197,5 +198,10 @@ export class PlantsController {
   @ApiOkResponse({ type: PlantStatsResponseDto })
   async getFamilyStats() {
     return this.plantsService.getFamilyStats();
+  }
+
+  @Post('find-by-names')
+  findByNames(@Body() dto: FindPlantsByNamesDto) {
+    return this.plantsService.findByScientificNames(dto);
   }
 }

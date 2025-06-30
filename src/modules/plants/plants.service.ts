@@ -1,5 +1,6 @@
 // src/plants/plants.service.ts
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -21,7 +22,15 @@ import { PlantListQueryDto } from './dto/plant-list-query.dto';
 import { PlantStatsResponseDto } from './dto/plant-stats.dto';
 import { HistoryService } from '../history/history.service';
 import { toObjectId } from 'src/common/utils/to-object-id';
+import { FindPlantsByNamesDto } from './dto';
 // import { Express } from 'express';
+
+type PlantLite = {
+  _id: string;
+  scientific_name: string;
+  common_name: string[];
+  image: string | null;
+};
 
 @Injectable()
 export class PlantsService {
@@ -419,5 +428,28 @@ export class PlantsService {
     ]);
 
     return { totalPlants, families: agg };
+  }
+
+  async findByScientificNames(dto: FindPlantsByNamesDto): Promise<PlantLite[]> {
+    const { scientific_names } = dto;
+
+    if (!scientific_names?.length)
+      throw new BadRequestException('scientific_names không được rỗng');
+
+    // Lấy đúng 1 ảnh đầu tiên, tránh trả cả mảng lớn
+    const docs = await this.plantModel
+      .find(
+        { scientific_name: { $in: scientific_names } },
+        { scientific_name: 1, common_name: 1, images: { $slice: 1 } },
+      )
+      .lean()
+      .exec();
+
+    return (docs as any[]).map((p) => ({
+      _id: p._id.toString(),
+      scientific_name: p.scientific_name,
+      common_name: p.common_name ?? [],
+      image: p.images?.[0] ?? null,
+    }));
   }
 }

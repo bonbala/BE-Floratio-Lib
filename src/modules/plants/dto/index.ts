@@ -5,3 +5,4 @@ export * from './create-family.dto';
 export * from './update-family.dto';
 export * from './plant-list-query.dto';
 export * from './plant-stats.dto';
+export * from './find-by-names.dto';
